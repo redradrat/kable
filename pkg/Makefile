@@ -1,4 +1,4 @@
-BINTARGET=bin/kaps
+BINTARGET=bin/kapabilities
 
 # Run tests
 test: fmt vet
