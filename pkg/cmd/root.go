@@ -19,9 +19,9 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "kapabilities",
-	Short: "A CLI to manage kapabilities payloads",
-	Long: `A tiny but smart CLI utility to manage and transform kapabilities payloads into desired output formats.
+	Use:   "kable",
+	Short: "A CLI to manage kable payloads",
+	Long: `A tiny but smart CLI utility to manage and transform kable payloads into desired output formats.
 
 Potential targets could be GitOps controller platforms.`,
 	// Uncomment the following line if your bare application
@@ -45,7 +45,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/kapabilities/settings.json)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/kable/settings.json)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -66,8 +66,8 @@ func initConfig() {
 		}
 
 		// Search config in home directory with name ".cloud-objects" (without extension).
-		viper.AddConfigPath(home + "/etc/kapabilities/")
-		viper.AddConfigPath(home + ".config/kapabilities/")
+		viper.AddConfigPath(home + "/etc/kable/")
+		viper.AddConfigPath(home + ".config/kable/")
 		viper.SetConfigName("settings.json")
 	}
 

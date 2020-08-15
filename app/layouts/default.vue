@@ -19,7 +19,7 @@ export default Vue.extend({
       data () {
     return {
       fixed: false,
-      title: 'Kapabilities'
+      title: 'kable'
     }
   }
 })

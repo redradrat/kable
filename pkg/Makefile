@@ -1,4 +1,4 @@
-BINTARGET=bin/kapabilities
+BINTARGET=bin/kable
 
 # Run tests
 test: fmt vet

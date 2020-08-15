@@ -1,4 +1,4 @@
-# kapabilities-ui
+# kable-ui
 
 ## Build Setup
 

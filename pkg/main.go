@@ -5,7 +5,7 @@
 
 package main
 
-import "github.com/redradrat/kapabilities/cmd"
+import "github.com/redradrat/kable/pkg/cmd"
 
 func main() {
 	cmd.Execute()

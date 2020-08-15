@@ -16,18 +16,22 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/labstack/echo/v4"
+	"github.com/redradrat/kable/pkg/kable"
 	"github.com/spf13/cobra"
 )
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "Run kapabilities as a server",
-	Long:  `Runs kapabilities as a server expecting payloads via a REST interface.`,
+	Short: "Run kable as a server",
+	Long:  `Runs kable as a server expecting payloads via a REST interface.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("serve called")
+		serv := kable.KableServ{}
+		e := echo.New()
+		kable.RegisterHandlers(e, &serv)
+		e.Static("/", "kable.v1.yaml")
+		e.Logger.Fatal(e.Start("localhost:1323"))
 	},
 }
 
