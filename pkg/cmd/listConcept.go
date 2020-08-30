@@ -16,25 +16,43 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/redradrat/kable/pkg/kable"
 	"github.com/spf13/cobra"
 )
 
-// conceptCmd represents the concept command
-var conceptCmd = &cobra.Command{
-	Use:   "concept",
-	Short: "Interact with concepts of a repository",
+// listConceptsCmd represents the list command
+var listConceptsCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all available concepts",
+	Run: func(cmd *cobra.Command, args []string) {
+		concepts, err := kable.ListConcepts()
+		if err != nil {
+			PrintError("unable to list concepts: %s", err)
+		}
+		var outList [][]interface{}
+		for _, pair := range concepts {
+			repoName := kable.MustGetRepoIndex(pair.RepoId).Name
+			outList = append(outList, []interface{}{
+				pair.Path + "@" + repoName,
+				pair.Concept.Meta.Name,
+				pair.Concept.Meta.Version,
+				repoName,
+			})
+		}
+		PrintTable([]string{"ID", "Name", "Version", "Repository"}, outList...)
+	},
 }
 
 func init() {
-	rootCmd.AddCommand(conceptCmd)
+	conceptCmd.AddCommand(listConceptsCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// conceptCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// listReposCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// conceptCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// listReposCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

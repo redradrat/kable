@@ -16,58 +16,50 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
-	"fmt"
-	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/redradrat/kable/pkg/kable"
-
 	"github.com/spf13/cobra"
 )
 
-// addCmd represents the add command
-var addCmd = &cobra.Command{
-	Use:   "add [URL]",
-	Short: "Add a repository to current config",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("requires exactly one arguments")
-		}
-		repoUrl := args[0]
+var conceptType string
 
-		if _, err := url.Parse(repoUrl); err != nil {
-			return fmt.Errorf("invalid URL given: %s", args[1])
-		}
-		return nil
-	},
+// initConceptCmd represents the initConcept command
+var initConceptCmd = &cobra.Command{
+	Use:   "concept",
+	Short: "Initialize a concept in the current folder",
 	Run: func(cmd *cobra.Command, args []string) {
-		PrintMsg("Fetching repository...")
-		repoUrl := args[0]
-		name, err := kable.AddRepository(repoUrl, "master")
+		wd, err := os.Getwd()
 		if err != nil {
-			if err.Error() != kable.RepositoryAlreadyExistsError {
-				PrintError("unable to add repository: %s", err)
-				os.Exit(1)
-			} else {
-				PrintSuccess("Repository already configured! [%s]", name)
-				os.Exit(0)
-			}
+			PrintError("unable to initialize concept dir: %s", err)
 		}
-		PrintSuccess("Successfully added repository! [%s]", name)
+		name := filepath.Base(wd)
+		PrintMsg("Initializing concept '%s' of type '%s'...", name, conceptType)
+
+		if err := kable.InitConcept(name, conceptType); err != nil {
+			PrintError("unable to initialize concept dir: %s", err)
+		}
+		PrintSuccess("Successfully initialized Concept!")
 	},
 }
 
 func init() {
-	repoCmd.AddCommand(addCmd)
+	initCmd.AddCommand(initConceptCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// addCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// conceptCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	initConceptCmd.Flags().StringVarP(
+		&conceptType,
+		"type",
+		"t",
+		"jsonnet",
+		"the type this concept should have",
+	)
 }

@@ -18,6 +18,7 @@ const (
 	ConfigAlreadyInitializedError = "currentConfig is already initialized"
 	RepositoryAlreadyExistsError  = "repository is already configured"
 	RepositoryNotExistsError      = "repository is not configured"
+	RepositoryNotInitializedError = "repository is not yet initialized"
 )
 
 var currentConfig *Config
@@ -135,7 +136,7 @@ func writeConfig(path string) error {
 	if err != nil {
 		return err
 	}
-	out, err := json.MarshalIndent(currentConfig, "", "    ")
+	out, err := json.MarshalIndent(currentConfig, "", "	")
 	if err != nil {
 		return err
 	}

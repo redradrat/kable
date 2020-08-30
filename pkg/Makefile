@@ -8,6 +8,9 @@ test: fmt vet
 fmt:
 	go fmt ./...
 
+install: build
+	cp bin/kable ~/tempapps/kable
+
 # Run go vet against code
 vet:
 	go vet ./...
