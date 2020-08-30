@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: kable
+  title: api
   version: '1.0'
   description: ''
 servers:
@@ -107,13 +107,13 @@ components:
           type: object
           properties:
             mandatory:
-              $ref: '#/components/schemas/ValueLIst'
+              $ref: '#/components/schemas/ValueList'
             optional:
-              $ref: '#/components/schemas/ValueLIst'
+              $ref: '#/components/schemas/ValueList'
       required:
         - meta
-    ValueLIst:
-      title: ValueLIst
+    ValueList:
+      title: ValueList
       type: array
       description: A list of typed key/value pairs.
       items:

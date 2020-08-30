@@ -16,35 +16,37 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/redradrat/kable/pkg/api"
+	"github.com/redradrat/kable/pkg/kable"
 	"github.com/spf13/cobra"
 )
 
-// serveCmd represents the serve command
-var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Run kable as a server",
-	Long:  `Runs kable as a server expecting payloads via a REST interface.`,
+// tidyCmd represents the tidy command
+var tidyCmd = &cobra.Command{
+	Use:   "tidy",
+	Short: "Clean up removed, cached repos",
 	Run: func(cmd *cobra.Command, args []string) {
-		serv := api.Serv{}
-		e := echo.New()
-		api.RegisterHandlers(e, &serv)
-		e.Static("/", "kable.v1.yaml")
-		e.Logger.Fatal(e.Start("localhost:1323"))
+		PrintMsg("Tidying up cached repositories...")
+		list, err := kable.TidyRepositories()
+		if err != nil {
+			PrintError("unable to clean up repositories: %s", err)
+		}
+		for _, name := range list {
+			PrintWarning("Cleaned up '%s'", name)
+		}
+		PrintSuccess("Successfully cleaned up repositories!")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(serveCmd)
+	repoCmd.AddCommand(tidyCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// tidyCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// tidyCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

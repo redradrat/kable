@@ -16,35 +16,44 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/redradrat/kable/pkg/api"
+	"errors"
+	"os"
+
+	"github.com/redradrat/kable/pkg/kable"
 	"github.com/spf13/cobra"
 )
 
-// serveCmd represents the serve command
-var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Run kable as a server",
-	Long:  `Runs kable as a server expecting payloads via a REST interface.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		serv := api.Serv{}
-		e := echo.New()
-		api.RegisterHandlers(e, &serv)
-		e.Static("/", "kable.v1.yaml")
-		e.Logger.Fatal(e.Start("localhost:1323"))
+// removeCmd represents the remove command
+var removeCmd = &cobra.Command{
+	Use:     "remove [NAME]",
+	Aliases: []string{"delete"},
+	Short:   "Removes a repository from current config",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return errors.New("requires exactly one arguments")
+		}
+		return nil
 	},
-}
+	Run: func(cmd *cobra.Command, args []string) {
+		PrintMsg("Removing repository...")
+		name := args[0]
+		if err := kable.RemoveRepository(name); err != nil {
+			PrintError("unable to remove repository: %s \n", err)
+			os.Exit(1)
+		}
+		PrintSuccess("Successfully removed repository! [%s]", name)
+	}}
 
 func init() {
-	rootCmd.AddCommand(serveCmd)
+	repoCmd.AddCommand(removeCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// removeCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// removeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -16,35 +16,28 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/redradrat/kable/pkg/api"
 	"github.com/spf13/cobra"
 )
 
-// serveCmd represents the serve command
-var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Run kable as a server",
-	Long:  `Runs kable as a server expecting payloads via a REST interface.`,
+// conceptCmd represents the concept command
+var conceptCmd = &cobra.Command{
+	Use:   "concept",
+	Short: "Interact with concepts of a repository",
 	Run: func(cmd *cobra.Command, args []string) {
-		serv := api.Serv{}
-		e := echo.New()
-		api.RegisterHandlers(e, &serv)
-		e.Static("/", "kable.v1.yaml")
-		e.Logger.Fatal(e.Start("localhost:1323"))
+		PrintMsg("concept called")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(conceptCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// conceptCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// conceptCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

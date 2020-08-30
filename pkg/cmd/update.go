@@ -16,35 +16,36 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/redradrat/kable/pkg/api"
+	"os"
+
+	"github.com/redradrat/kable/pkg/kable"
 	"github.com/spf13/cobra"
 )
 
-// serveCmd represents the serve command
-var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Run kable as a server",
-	Long:  `Runs kable as a server expecting payloads via a REST interface.`,
+// updateCmd represents the update command
+var updateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update all the configured repositories",
 	Run: func(cmd *cobra.Command, args []string) {
-		serv := api.Serv{}
-		e := echo.New()
-		api.RegisterHandlers(e, &serv)
-		e.Static("/", "kable.v1.yaml")
-		e.Logger.Fatal(e.Start("localhost:1323"))
+		PrintMsg("Updating repositories...")
+		if err := kable.UpdateRepositories(); err != nil {
+			PrintError("unable to update repositories: %s", err)
+			os.Exit(1)
+		}
+		PrintSuccess("Successfully update repositories!")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(serveCmd)
+	repoCmd.AddCommand(updateCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// updateCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
