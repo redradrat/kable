@@ -7,13 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"github.com/google/uuid"
+	"strings"
 )
 
 const (
 	ConceptFileName        = "concept.json"
-	ConceptTypeUnsupported = "given concept type is not supported"
+	ConceptIdentifierRegex = "(.*)@(.*)"
 )
 
 var (
@@ -81,8 +80,8 @@ type Concept struct {
 
 // ConceptMeta defines model for ConceptMeta.
 type ConceptMeta struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name       string         `json:"name"`
+	Maintainer MaintainerInfo `json:"maintainer,omitempty"`
 }
 
 // ConceptInputs defines model for ConceptInputs.
@@ -97,12 +96,12 @@ func (it InputType) String() string {
 	return string(it)
 }
 
-func parseConcept(path string, repoid uuid.UUID) (*Concept, error) {
+func parseConcept(path string, repoid string) (*Concept, error) {
 	concept := Concept{}
 	if !IsInitialized(repoid) {
-		return nil, fmt.Errorf(RepositoryNotInitializedError)
+		return nil, RepositoryNotInitializedError
 	}
-	content, err := ioutil.ReadFile(filepath.Join(MustGetCachePath(repoid), path))
+	content, err := ioutil.ReadFile(filepath.Join(MustGetCacheInfo(repoid).Path, path))
 	if err != nil {
 		return nil, err
 	}
@@ -112,14 +111,30 @@ func parseConcept(path string, repoid uuid.UUID) (*Concept, error) {
 	return &concept, nil
 }
 
-type ConceptRepoPair struct {
+type ConceptRepoInfo struct {
 	Concept Concept
 	Path    string
-	RepoId  uuid.UUID
+	RepoId  string
 }
 
-func ListConceptsForRepo(repoid uuid.UUID) ([]ConceptRepoPair, error) {
-	var concepts []ConceptRepoPair
+type MaintainerInfo struct {
+	Name  string `json:"name"`
+	Email string `json:"email,omitempt"`
+}
+
+func (mi MaintainerInfo) String() string {
+	if mi.Name == "" {
+		return ""
+	}
+	elements := []string{mi.Name}
+	if mi.Email != "" {
+		elements = append(elements, fmt.Sprintf("<%s>", mi.Email))
+	}
+	return strings.Join(elements, " ")
+}
+
+func ListConceptsForRepo(repoid string) ([]ConceptRepoInfo, error) {
+	var concepts []ConceptRepoInfo
 	if !IsInitialized(repoid) {
 		return concepts, nil
 	}
@@ -127,19 +142,23 @@ func ListConceptsForRepo(repoid uuid.UUID) ([]ConceptRepoPair, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, path := range ri.ConceptEntries {
-		c, err := parseConcept(filepath.Join(path.String(), ConceptFileName), repoid)
+	for _, entry := range ri.ConceptEntries {
+		c, err := parseConcept(filepath.Join(entry, ConceptFileName), repoid)
 		if err != nil {
 			return concepts, err
 		}
-		concepts = append(concepts, ConceptRepoPair{RepoId: repoid, Path: path.String(), Concept: *c})
+		concepts = append(concepts, ConceptRepoInfo{RepoId: repoid, Path: entry, Concept: *c})
 	}
 	return concepts, nil
 }
 
-func ListConcepts() ([]ConceptRepoPair, error) {
-	var repoList []ConceptRepoPair
-	for id, _ := range currentConfig.Repositories {
+func ListConcepts() ([]ConceptRepoInfo, error) {
+	var repoList []ConceptRepoInfo
+	idx, err := readCacheIndex()
+	if err != nil {
+		return nil, err
+	}
+	for id, _ := range idx.Index {
 		concepts, err := ListConceptsForRepo(id)
 		if err != nil {
 			return nil, err
@@ -153,8 +172,7 @@ func InitConcept(name, conceptType string) error {
 	cpt := Concept{
 		ApiVersion: 1,
 		Meta: ConceptMeta{
-			Name:    name,
-			Version: "0.1.0",
+			Name: name,
 		},
 		Inputs: ConceptInputs{
 			Mandatory: map[string]InputType{},
@@ -188,7 +206,7 @@ func InitConcept(name, conceptType string) error {
 	case "yaml":
 
 	default:
-		return fmt.Errorf(ConceptTypeUnsupported)
+		return ConceptTypeUnsupported
 	}
 
 	if err := createJson(cpt, "./concept.json"); err != nil {

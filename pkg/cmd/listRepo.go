@@ -25,15 +25,11 @@ var listReposCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all concept repositories in the current config",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := kable.GetConfig()
+		repoArray, err := kable.ListRepositories()
 		if err != nil {
 			PrintError("cannot list repositories: %s \n", err)
 		}
-		repoArray, err := cfg.Repositories.ToArray()
-		if err != nil {
-			PrintError("cannot list repositories: %s \n", err)
-		}
-		PrintTable([]string{"Name", "URL", "ID", "Initialized"}, repoArray...)
+		PrintTable([]string{"ID", "URL", "Initialized"}, repoArray...)
 	},
 }
 

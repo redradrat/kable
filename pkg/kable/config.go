@@ -7,18 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/uuid"
-
 	"github.com/mitchellh/go-homedir"
 )
 
 const (
-	ConfigFileName                = "kableconfig.json"
-	ConfigNotInitializedError     = "currentConfig is not yet initialized"
-	ConfigAlreadyInitializedError = "currentConfig is already initialized"
-	RepositoryAlreadyExistsError  = "repository is already configured"
-	RepositoryNotExistsError      = "repository is not configured"
-	RepositoryNotInitializedError = "repository is not yet initialized"
+	ConfigFileName = "kableconfig.json"
 )
 
 var currentConfig *Config
@@ -27,13 +20,13 @@ var rootDir string
 var userDir string
 var curDir string
 var repoDir string
+var conceptDir string
 var cfgHierarchy []string
 
 // Config represents the Kable currentConfig object
 type Config struct {
-	APIVersion          APIVersion   `json:"apiVersion"`
-	Repositories        Repositories `json:"repositories"`
-	UseKeychainProvider bool         `json:"useKeychainProvider"`
+	APIVersion          APIVersion `json:"apiVersion"`
+	UseKeychainProvider bool       `json:"useKeychainProvider"`
 }
 
 func init() {
@@ -47,6 +40,7 @@ func init() {
 	rootDir = "/etc/kable/"
 	userDir = filepath.Join(home + "/.kable/")
 	repoDir = filepath.Join(userDir, "/repos/")
+	conceptDir = filepath.Join(userDir, "/concepts/")
 	curDir = "./"
 	cfgHierarchy = []string{
 		filepath.Join(curDir, ConfigFileName),
@@ -112,12 +106,11 @@ func initConfig() error {
 	}
 	if err := setCurrentConfig(&Config{
 		APIVersion:          "1",
-		Repositories:        map[uuid.UUID]Repository{},
 		UseKeychainProvider: true,
 	}); err != nil {
 		return err
 	}
-	configPath = filepath.Join(userDir + ConfigFileName)
+	configPath = filepath.Join(userDir, ConfigFileName)
 	if err := writeConfig(configPath); err != nil {
 		return err
 	}
@@ -126,7 +119,7 @@ func initConfig() error {
 
 func writeConfig(path string) error {
 	if !configSet() {
-		return fmt.Errorf(ConfigNotInitializedError)
+		return ConfigNotInitializedError
 	}
 	filepath.Dir(configPath)
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
@@ -152,12 +145,12 @@ func GetConfig() (*Config, error) {
 	if configSet() {
 		return currentConfig, nil
 	}
-	return nil, fmt.Errorf(ConfigNotInitializedError)
+	return nil, ConfigNotInitializedError
 }
 
 func setCurrentConfig(config *Config) error {
 	if configSet() {
-		return fmt.Errorf(ConfigAlreadyInitializedError)
+		return ConfigAlreadyInitializedError
 	}
 	currentConfig = config
 	return nil

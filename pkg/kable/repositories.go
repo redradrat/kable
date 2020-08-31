@@ -2,7 +2,7 @@ package kable
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,44 +15,32 @@ import (
 )
 
 const (
-	RepoIndexFilename      = "kable.json"
-	RepositoryInvalidError = "given repository is not a valid kable repository"
+	RepoIndexFilename = "kable.json"
 )
 
-type Repositories map[uuid.UUID]Repository
-
-type Repository struct {
-	RepoURL string
-	Branch  string
-}
-
 type RepoIndex struct {
-	Version        int            `json:"version"`
-	Name           string         `json:"name"`
-	ConceptEntries []ConceptEntry `json:"concepts"`
+	Version        int      `json:"version"`
+	ConceptEntries []string `json:"concepts"`
 }
 
-type ConceptEntry string
+func ListRepositories() ([][]interface{}, error) {
+	idx, err := readCacheIndex()
+	if err != nil {
+		return nil, err
+	}
 
-func (ce ConceptEntry) String() string {
-	return string(ce)
-}
-
-func (repos Repositories) ToArray() ([][]interface{}, error) {
 	var repoSlices [][]interface{}
-	for id, repo := range repos {
+	for id, repo := range idx.Index {
+		if repo.SoftDeleted {
+			continue
+		}
 		if IsInitialized(id) {
-			repoSlices = append(repoSlices, []interface{}{MustGetRepoIndex(id).Name, repo.RepoURL, id, true})
+			repoSlices = append(repoSlices, []interface{}{id, repo.URI, true})
 		} else {
-			repoSlices = append(repoSlices, []interface{}{"", repo.RepoURL, id, false})
+			repoSlices = append(repoSlices, []interface{}{id, repo.URI, false})
 		}
 	}
 	return repoSlices, nil
-}
-
-type Cloner struct {
-	Config       ClonerConfig
-	Repositories Repositories
 }
 
 type ClonerConfig struct {
@@ -60,267 +48,274 @@ type ClonerConfig struct {
 	BaseDir string
 }
 
-type CloneIndex map[uuid.UUID]CloneRef
-
-type CloneRef struct {
-	Path   string
-	Branch string
-	URI    string
+type RepoCache struct {
+	Index    map[string]RepoCacheEntry
+	modCount uuid.UUID
 }
 
-func AddToCacheIndex(id uuid.UUID, url, branch string) error {
-	ci := CloneIndex{}
-	cipath := filepath.Join(repoDir, "cloneindex.json")
-	content, _ := ioutil.ReadFile(cipath)
-	_ = json.Unmarshal(content, &ci)
+func NewRepoCache() RepoCache {
+	return RepoCache{
+		Index:    map[string]RepoCacheEntry{},
+		modCount: uuid.UUID{},
+	}
+}
 
-	path := MustGetCachePath(id)
+type RepoCacheEntry struct {
+	Path        string
+	Branch      string
+	URI         string
+	SoftDeleted bool
+}
 
-	ci[id] = CloneRef{
+func writeCacheIndex(ci RepoCache) error {
+	return writeCacheIndexI(ci, false)
+}
+
+func initCacheIndex() error {
+	rc := NewRepoCache()
+	return writeCacheIndexI(rc, true)
+}
+
+func writeCacheIndexI(ci RepoCache, init bool) error {
+	if !init {
+		oldIdx, err := readCacheIndex()
+		if err != nil {
+			return err
+		}
+
+		if ci.modCount != oldIdx.modCount {
+			return StaleRepoCacheIndexError
+		}
+	}
+
+	// Before writing, we update the modCount.
+	ci.modCount = uuid.New()
+
+	out, err := json.MarshalIndent(ci, "", "	")
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(filepath.Join(userDir, "repo.cache"), out, 0666); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readCacheIndex() (RepoCache, error) {
+	index := NewRepoCache()
+	content, err := ioutil.ReadFile(filepath.Join(userDir, "repo.cache"))
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return index, err
+		}
+		if err := initCacheIndex(); err != nil {
+			return index, err
+		}
+	}
+	if err := json.Unmarshal(content, &index); err != nil {
+		return index, err
+	}
+	return index, nil
+}
+
+func AddToCacheIndex(id string, url, path, branch string) error {
+	cache, err := readCacheIndex()
+
+	// If we get an "IsNotExist"-error here, we just assume we're initializing
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	cache.Index[id] = RepoCacheEntry{
 		Branch: branch,
 		Path:   path,
 		URI:    url,
 	}
-	out, err := json.MarshalIndent(ci, "", "	")
-	if err != nil {
+
+	if err := writeCacheIndex(cache); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(cipath, out, 0666); err != nil {
-		return err
-	}
+
 	return nil
 }
 
-func GetCacheIndex() (CloneIndex, error) {
-	ci := CloneIndex{}
-	cipath := filepath.Join(repoDir, "cloneindex.json")
-	content, err := ioutil.ReadFile(cipath)
-	if err == nil {
-		if err := json.Unmarshal(content, &ci); err != nil {
-			return ci, err
-		}
-	}
-
-	return ci, nil
-}
-
-func GetCacheInfo(id uuid.UUID) (*CloneRef, error) {
-	ci, err := GetCacheIndex()
+func GetCacheInfo(id string) (*RepoCacheEntry, error) {
+	ci, err := readCacheIndex()
 	if err != nil {
 		return nil, err
 	}
-	out := ci[id]
+	out := ci.Index[id]
 	return &out, nil
 }
 
-func RemoveFromCacheIndex(id uuid.UUID) error {
-	ci := CloneIndex{}
-	cipath := filepath.Join(repoDir, "cloneindex.json")
-	content, _ := ioutil.ReadFile(cipath)
-	_ = json.Unmarshal(content, &ci)
+func DeactivateRepoCache(id string) error {
+	for {
+		cache, err := readCacheIndex()
+		if err != nil {
+			return err
+		}
 
-	delete(ci, id)
-	out, err := json.MarshalIndent(ci, "", "	")
-	if err != nil {
-		return err
+		entry := cache.Index[id]
+		entry.SoftDeleted = true
+		cache.Index[id] = entry
+
+		if err := writeCacheIndex(cache); err != nil {
+			if errors.Is(err, StaleRepoCacheIndexError) {
+				continue
+			}
+			return err
+		}
+
+		return nil
 	}
-	if err := ioutil.WriteFile(cipath, out, 0666); err != nil {
-		return err
+
+}
+
+func ActivateRepoCache(oldid, newid string) error {
+	for {
+		cache, err := readCacheIndex()
+		if err != nil {
+			return err
+		}
+
+		entry := cache.Index[oldid]
+		entry.SoftDeleted = false
+		cache.Index[newid] = entry
+
+		if oldid != newid {
+			delete(cache.Index, oldid)
+			if err := os.Rename(filepath.Join(repoDir, oldid), filepath.Join(repoDir, newid)); err != nil {
+				return err
+			}
+		}
+
+		if err := writeCacheIndex(cache); err != nil {
+			if errors.Is(err, StaleRepoCacheIndexError) {
+				continue
+			}
+			return err
+		}
+
+		return nil
 	}
-	return nil
+}
+
+func RemoveFromCacheIndex(id string) error {
+	for {
+		cache, err := readCacheIndex()
+		if err != nil {
+			return err
+		}
+
+		delete(cache.Index, id)
+		if err := writeCacheIndex(cache); err != nil {
+			if errors.Is(err, StaleRepoCacheIndexError) {
+				continue
+			}
+			return err
+		}
+
+		return nil
+	}
 }
 
 // Returns a UUID if cached, else just returns nil.
-func IsCached(url, branch string) (*uuid.UUID, error) {
-	var uid uuid.UUID
-	idx, err := GetCacheIndex()
+func IsCached(url, branch string) (*string, error) {
+	var id string
+	idx, err := readCacheIndex()
 	if err != nil {
-		return &uid, err
+		return &id, err
 	}
-	for existingId, ref := range idx {
+	for existingId, ref := range idx.Index {
 		if ref.URI == url && ref.Branch == branch {
-			uid = existingId
-			return &uid, nil
+			id = existingId
+			return &id, nil
 		}
 	}
 	return nil, nil
 
 }
 
-func AddRepository(url, branch string) (string, error) {
-	return currentConfig.Repositories.AddRepository(url, branch)
-}
-
-func UpdateRepositories() error {
-	return currentConfig.Repositories.UpdateRepositories()
-}
-
-func RemoveRepository(name string) error {
-	return currentConfig.Repositories.RemoveRepository(name)
-}
-
 // TidyRepositories cleans up all cached repositories that are not in use in the current config,
 // and returns the names of the deleted ones.
-func TidyRepositories() ([]string, error) {
-	return currentConfig.Repositories.TidyRepositories()
-}
-
-func (repos Repositories) TidyRepositories() ([]string, error) {
-	var repolist []string
-
-	idx, err := GetCacheIndex()
+func TidyRepositories() error {
+	idx, err := readCacheIndex()
 	if err != nil {
-		return repolist, err
+		return err
 	}
 
 	// Go through index, and delete all repositories, that are not used in the current config
-	for id, ref := range idx {
-		if _, exists := currentConfig.Repositories[id]; !exists {
-			if err := os.RemoveAll(ref.Path); err != nil {
-				return repolist, err
+	fi, err := ioutil.ReadDir(repoDir)
+	if err != nil {
+		return err
+	}
+
+	for _, ref := range fi {
+		if _, exists := idx.Index[ref.Name()]; !exists || idx.Index[ref.Name()].SoftDeleted == true {
+			if err := os.RemoveAll(filepath.Join(repoDir, ref.Name())); err != nil {
+				return err
 			}
-			if err := RemoveFromCacheIndex(id); err != nil {
-				return repolist, err
+			if err := RemoveFromCacheIndex(ref.Name()); err != nil {
+				return err
 			}
-			repolist = append(repolist, MustGetRepoIndex(id).Name)
 		}
 	}
 
-	return repolist, nil
+	return nil
 }
 
-func (repos Repositories) AddRepository(url, branch string) (string, error) {
-	if !configSet() {
-		return "", fmt.Errorf(ConfigNotInitializedError)
+func AddRepository(id, url, branch string) error {
+	idx, err := readCacheIndex()
+	if err != nil {
+		return err
 	}
 
-	for _, repo := range currentConfig.Repositories {
-		if repo.RepoURL == url && repo.Branch == branch {
-			return "", fmt.Errorf(RepositoryAlreadyExistsError)
-		}
+	if _, exists := idx.Index[id]; exists && !idx.Index[id].SoftDeleted {
+		return RepositoryAlreadyExistsError
 	}
 
-	var uid uuid.UUID
 	// Now let's first check if we have a repo cached.
 	cachedId, err := IsCached(url, branch)
 	if err != nil {
-		return "", err
-	}
-	// If cachedId is nil, we need to clone.
-	if cachedId != nil {
-		uid = *cachedId
-	} else {
-		uid, err = cloneRepo(url, branch)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	currentConfig.Repositories[uid] = Repository{
-		RepoURL: url,
-		Branch:  branch,
-	}
-
-	name := MustGetRepoIndex(uid).Name
-	if err := writeConfig(configPath); err != nil {
-		return name, err
-	}
-	return name, nil
-}
-
-func cloneRepo(url, branch string) (uuid.UUID, error) {
-	return cloneRepoWithExistingId(url, branch, nil)
-}
-
-func cloneRepoWithExistingId(url, branch string, id *uuid.UUID) (uuid.UUID, error) {
-	var uid uuid.UUID
-	if id != nil {
-		uid = *id
-	} else {
-		uid = uuid.New()
-	}
-
-	repopath := filepath.Join(repoDir, uid.String())
-	refName := plumbing.NewBranchReferenceName(branch)
-	err := clone(ClonerConfig{
-		CloneOptions: git.CloneOptions{
-			URL:           url,
-			ReferenceName: refName,
-			SingleBranch:  true,
-		},
-		BaseDir: repopath,
-	})
-	if err != nil {
-		return uid, err
-	}
-
-	// Get the name from the Index. If we get a PathError from GetRepoIndex here,
-	// it means something is fishy with this repository. Probably not a kable repo.
-	_, err = GetRepoIndex(uid)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.RemoveAll(repopath); err != nil {
-				return uid, err
-			}
-			return uid, fmt.Errorf(RepositoryInvalidError)
-		}
-		return uid, err
-	}
-
-	// After a successful clone, we need to add the repo to the cache index.
-	if err := AddToCacheIndex(uid, url, branch); err != nil {
-		return uid, err
-	}
-
-	return uid, err
-}
-
-func (repos Repositories) RemoveRepository(name string) error {
-	if !configSet() {
-		return fmt.Errorf(ConfigNotInitializedError)
-	}
-
-	id := getRepoIdForName(name)
-
-	if _, exists := currentConfig.Repositories[*id]; !exists {
-		return fmt.Errorf(RepositoryNotExistsError)
-	}
-
-	delete(currentConfig.Repositories, *id)
-
-	if err := writeConfig(configPath); err != nil {
 		return err
 	}
-	return nil
-}
 
-func getRepoIdForName(name string) *uuid.UUID {
-	for repoid, _ := range currentConfig.Repositories {
-		if IsInitialized(repoid) {
-			if MustGetRepoIndex(repoid).Name == name {
-				return &repoid
-			}
+	if cachedId != nil {
+		if err := ActivateRepoCache(*cachedId, id); err != nil {
+			return err
 		}
+		// Exit without additional cloning.
+		return nil
 	}
+
+	// If cachedId is nil, we need to clone.
+	if err := cloneRepo(id, url, branch); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (repos Repositories) UpdateRepositories() error {
-	for id, ref := range currentConfig.Repositories {
+func RemoveRepository(id string) error {
+	return DeactivateRepoCache(id)
+}
 
+func UpdateRepositories() error {
+	idx, err := readCacheIndex()
+	if err != nil {
+		return err
+	}
+
+	for id, ref := range idx.Index {
 		if !IsInitialized(id) {
-			_, err := cloneRepoWithExistingId(ref.RepoURL, ref.Branch, &id)
-			if err != nil {
+			if err := cloneRepo(id, ref.URI, ref.Branch); err != nil {
 				return err
 			}
-			if err := AddToCacheIndex(id, ref.RepoURL, ref.Branch); err != nil {
-				return err
-			}
-
 			continue
 		}
 
-		repo, err := git.PlainOpen(MustGetCachePath(id))
+		repo, err := git.PlainOpen(MustGetCacheInfo(id).Path)
 		if err != nil {
 			return err
 		}
@@ -340,7 +335,54 @@ func (repos Repositories) UpdateRepositories() error {
 	return nil
 }
 
-func IsInitialized(repoid uuid.UUID) bool {
+func cloneRepo(name, url, branch string) error {
+	repopath := filepath.Join(repoDir, name)
+	refName := plumbing.NewBranchReferenceName(branch)
+	err := clone(ClonerConfig{
+		CloneOptions: git.CloneOptions{
+			URL:           url,
+			ReferenceName: refName,
+			SingleBranch:  true,
+		},
+		BaseDir: repopath,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Get the name from the Index. If we get a PathError from GetRepoIndex here,
+	// it means something is fishy with this repository. Probably not a kable repo.
+	cont, err := ioutil.ReadFile(filepath.Join(repopath, RepoIndexFilename))
+	if err != nil {
+		if err := os.RemoveAll(repopath); err != nil {
+			return err
+		}
+		if os.IsNotExist(err) {
+			return RepositoryInvalidError
+		}
+		return err
+	}
+
+	ri := RepoIndex{}
+	if err := json.Unmarshal(cont, &ri); err != nil {
+		if err := os.RemoveAll(repopath); err != nil {
+			return err
+		}
+		if _, ok := err.(*json.UnmarshalTypeError); ok {
+			return RepositoryInvalidError
+		}
+		return err
+	}
+
+	// After a successful clone, we need to add the repo to the cache index.
+	if err := AddToCacheIndex(name, url, repopath, branch); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func IsInitialized(repoid string) bool {
 	initialized := true
 	_, err := GetRepoIndex(repoid)
 	if err != nil {
@@ -349,28 +391,20 @@ func IsInitialized(repoid uuid.UUID) bool {
 	return initialized
 }
 
-func GetCachePath(repo uuid.UUID) (string, error) {
-	ref, err := GetCacheInfo(repo)
-	if err != nil {
-		return "", err
-	}
-	return ref.Path, nil
-}
-
-func MustGetCachePath(repo uuid.UUID) string {
-	out, _ := GetCachePath(repo)
+func MustGetCacheInfo(id string) *RepoCacheEntry {
+	out, _ := GetCacheInfo(id)
 	return out
 }
 
-func GetRepoIndex(repoid uuid.UUID) (RepoIndex, error) {
+func GetRepoIndex(repoid string) (RepoIndex, error) {
 	index := RepoIndex{}
-	repoPath, err := GetCachePath(repoid)
+	cacheInfo, err := GetCacheInfo(repoid)
 	if err != nil {
 		return index, err
 	}
 
 	// Read in the file
-	content, err := ioutil.ReadFile(filepath.Join(repoPath, RepoIndexFilename))
+	content, err := ioutil.ReadFile(filepath.Join(cacheInfo.Path, RepoIndexFilename))
 	if err != nil {
 		return index, err
 	}
@@ -382,7 +416,7 @@ func GetRepoIndex(repoid uuid.UUID) (RepoIndex, error) {
 	return index, nil
 }
 
-func MustGetRepoIndex(repoid uuid.UUID) RepoIndex {
+func MustGetRepoIndex(repoid string) RepoIndex {
 	out, _ := GetRepoIndex(repoid)
 	return out
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/fatih/color"
 	"github.com/rodaine/table"
@@ -35,6 +36,7 @@ func PrintTable(headers []string, lines ...[]interface{}) {
 
 func PrintError(format string, a ...interface{}) {
 	fmt.Println(fmt.Errorf(color.RedString("! "+format, a...)))
+	os.Exit(1)
 }
 
 func PrintSuccess(format string, a ...interface{}) {

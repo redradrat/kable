@@ -17,9 +17,9 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 
 	"github.com/redradrat/kable/pkg/kable"
 
@@ -28,33 +28,39 @@ import (
 
 // addRepoCmd represents the add command
 var addRepoCmd = &cobra.Command{
-	Use:   "add [URL]",
+	Use:   "add [ID] [URL]",
 	Short: "Add a repository to current config",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("requires exactly one arguments")
+		if len(args) != 2 {
+			return errors.New("requires exactly TWO arguments")
 		}
-		repoUrl := args[0]
+		name := args[0]
+		repoUrl := args[1]
+
+		rxp := regexp.MustCompile("^[a-zA-Z]+$").MatchString
+		if !rxp(name) {
+			PrintError("invalid name given: %s", args[0])
+		}
 
 		if _, err := url.Parse(repoUrl); err != nil {
-			return fmt.Errorf("invalid URL given: %s", args[1])
+			PrintError("invalid URL given: %s", args[1])
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Fetching repository...")
-		repoUrl := args[0]
-		name, err := kable.AddRepository(repoUrl, "master")
+		name := args[0]
+		repoUrl := args[1]
+		err := kable.AddRepository(name, repoUrl, "master")
 		if err != nil {
-			if err.Error() != kable.RepositoryAlreadyExistsError {
+			if !errors.Is(err, kable.RepositoryAlreadyExistsError) {
 				PrintError("unable to add repository: %s", err)
-				os.Exit(1)
 			} else {
-				PrintSuccess("Repository already configured! [%s]", name)
+				PrintSuccess("Repository already configured!")
 				os.Exit(0)
 			}
 		}
-		PrintSuccess("Successfully added repository! [%s]", name)
+		PrintSuccess("Successfully added repository!")
 	},
 }
 

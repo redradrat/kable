@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"errors"
-	"os"
+	"regexp"
 
 	"github.com/redradrat/kable/pkg/kable"
 	"github.com/spf13/cobra"
@@ -25,23 +25,29 @@ import (
 
 // removeCmd represents the remove command
 var removeCmd = &cobra.Command{
-	Use:     "remove [NAME]",
+	Use:     "remove [ID]",
 	Aliases: []string{"delete"},
 	Short:   "Removes a repository from current config",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("requires exactly one arguments")
 		}
+
+		name := args[0]
+
+		rxp := regexp.MustCompile("^[a-zA-Z]+$").MatchString
+		if !rxp(name) {
+			PrintError("invalid name given: %s", args[0])
+		}
+
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Removing repository...")
-		name := args[0]
-		if err := kable.RemoveRepository(name); err != nil {
+		if err := kable.RemoveRepository(args[0]); err != nil {
 			PrintError("unable to remove repository: %s \n", err)
-			os.Exit(1)
 		}
-		PrintSuccess("Successfully removed repository! [%s]", name)
+		PrintSuccess("Successfully removed repository!")
 	}}
 
 func init() {

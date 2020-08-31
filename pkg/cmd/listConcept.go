@@ -31,15 +31,13 @@ var listConceptsCmd = &cobra.Command{
 		}
 		var outList [][]interface{}
 		for _, pair := range concepts {
-			repoName := kable.MustGetRepoIndex(pair.RepoId).Name
 			outList = append(outList, []interface{}{
-				pair.Path + "@" + repoName,
 				pair.Concept.Meta.Name,
-				pair.Concept.Meta.Version,
-				repoName,
+				pair.RepoId,
+				pair.Concept.Meta.Maintainer.String(),
 			})
 		}
-		PrintTable([]string{"ID", "Name", "Version", "Repository"}, outList...)
+		PrintTable([]string{"Name", "Repository", "Maintainer"}, outList...)
 	},
 }
 

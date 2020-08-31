@@ -26,12 +26,9 @@ var tidyCmd = &cobra.Command{
 	Short: "Clean up removed, cached repos",
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Tidying up cached repositories...")
-		list, err := kable.TidyRepositories()
+		err := kable.TidyRepositories()
 		if err != nil {
 			PrintError("unable to clean up repositories: %s", err)
-		}
-		for _, name := range list {
-			PrintWarning("Cleaned up '%s'", name)
 		}
 		PrintSuccess("Successfully cleaned up repositories!")
 	},

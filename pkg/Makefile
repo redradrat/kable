@@ -1,4 +1,6 @@
 BINTARGET=bin/kable
+CLI_VERSION?=nightly
+CLI_DATE=`date +%FT%T%z`
 
 # Run tests
 test: fmt vet
@@ -16,5 +18,5 @@ vet:
 	go vet ./...
 
 build:
-	go build -o ${BINTARGET}
+	go build -ldflags="-X github.com/redradrat/kable/pkg/cmd.cliVersion=$(CLI_VERSION) -X github.com/redradrat/kable/pkg/cmd.cliDate=$(CLI_DATE)" -o ${BINTARGET}
 	chmod +x ${BINTARGET}
