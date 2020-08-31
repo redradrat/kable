@@ -10,4 +10,5 @@ var (
 	ConfigNotInitializedError     = errors.New("currentConfig is not yet initialized")
 	ConfigAlreadyInitializedError = errors.New("currentConfig is already initialized")
 	ConceptTypeUnsupported        = errors.New("given concept type is not supported")
+	RenderTargetUnsupported       = errors.New("desired render target is not supported")
 )

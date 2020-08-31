@@ -7,16 +7,18 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
 const (
 	ConceptFileName        = "concept.json"
-	ConceptIdentifierRegex = "(.*)@(.*)"
+	ConceptIdentifierRegex = "^([a-z/]+)@([a-z]+)$"
 )
 
 var (
-	JsonnetMainTemplate = []byte(`local kausal = import "ksonnet-util/kausal.libsonnet";
+	IsValidConceptIdentifier = regexp.MustCompile(ConceptIdentifierRegex).MatchString
+	JsonnetMainTemplate      = []byte(`local kausal = import "ksonnet-util/kausal.libsonnet";
 
 local container = kausal.core.v1.container;
 local port = kausal.core.v1.containerPort;
@@ -71,6 +73,26 @@ install:
 `)
 )
 
+type ConceptIdentifier string
+
+func (ci ConceptIdentifier) String() string {
+	return string(ci)
+}
+
+func (ci ConceptIdentifier) IsValid() bool {
+	return IsValidConceptIdentifier(ci.String())
+}
+
+func (ci ConceptIdentifier) Concept() string {
+	getStrings := regexp.MustCompile(ConceptIdentifierRegex).FindAllString
+	return getStrings(ci.String(), -1)[0]
+}
+
+func (ci ConceptIdentifier) Repo() string {
+	getStrings := regexp.MustCompile(ConceptIdentifierRegex).FindAllString
+	return getStrings(ci.String(), -1)[1]
+}
+
 // Concept defines model for Concept.
 type Concept struct {
 	ApiVersion int           `json:"apiVersion"`
@@ -96,7 +118,7 @@ func (it InputType) String() string {
 	return string(it)
 }
 
-func parseConcept(path string, repoid string) (*Concept, error) {
+func GetConcept(path string, repoid string) (*Concept, error) {
 	concept := Concept{}
 	if !IsInitialized(repoid) {
 		return nil, RepositoryNotInitializedError
@@ -143,7 +165,7 @@ func ListConceptsForRepo(repoid string) ([]ConceptRepoInfo, error) {
 		return nil, err
 	}
 	for _, entry := range ri.ConceptEntries {
-		c, err := parseConcept(filepath.Join(entry, ConceptFileName), repoid)
+		c, err := GetConcept(filepath.Join(entry, ConceptFileName), repoid)
 		if err != nil {
 			return concepts, err
 		}
