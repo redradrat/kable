@@ -23,23 +23,60 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var outpath string
+var targetType string
+
 // createAppCmd represents the create command
 var createAppCmd = &cobra.Command{
-	Use:   "create ",
+	Use:   "create [NAME] [CONCEPT@REPO]",
 	Short: "A brief description of your command",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("requires exactly ONE arguments")
+		if len(args) != 2 {
+			return errors.New("requires exactly TWO arguments")
 		}
-		conceptIdentifier := args[0]
+		name := args[0]
+		conceptIdentifier := args[1]
+
+		if !kable.AppNameIsValid(name) {
+			PrintError("invalid name given: %s", args[0])
+		}
 
 		if !kable.IsValidConceptIdentifier(conceptIdentifier) {
-			PrintError("invalid name given: %s", args[0])
+			PrintError("invalid concept identifier given: %s", args[1])
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		PrintWarning("not yet implemented")
+		PrintMsg("Creating AppV1...")
+
+		name := args[0]
+
+		// First let's get our concept... maybe it doesn't even exist, hm? meow
+		conceptIdentifier := kable.ConceptIdentifier(args[1])
+		PrintMsg("Fetching Concept '%s'...", args[0])
+		cpt, err := kable.GetConcept(conceptIdentifier)
+		if err != nil {
+			PrintError("unable to get specified concept: %s", err)
+		}
+
+		// Run dialog to get values for concept inputs
+		avs, err := NewInputDialog(cpt.Inputs).RunInputDialog()
+		if err != nil {
+			PrintError("error processing concept inputs: %s", err)
+		}
+
+		// Now let's render our app
+		PrintMsg("Rendering AppV1...")
+		app, err := kable.NewAppV1(name, avs)
+		if err != nil {
+			PrintError("unable to render app: %s", err)
+		}
+
+		if err := kable.RenderApp(app, conceptIdentifier, outpath, kable.YamlTarget{}); err != nil {
+			PrintError("unable to render app: %s", err)
+		}
+
+		PrintSuccess("Successfully created app at: %s", outpath)
 	},
 }
 
@@ -54,5 +91,6 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// createAppCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	createAppCmd.Flags().StringVarP(&outpath, "output", "o", ".", "The output directory this app will be placed in")
+	createAppCmd.Flags().StringVarP(&targetType, "targetType", "t", "yaml", "The target format, this AppV1 will be rendered as")
 }

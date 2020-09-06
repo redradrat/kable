@@ -9,11 +9,23 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/whilp/git-urls"
 )
 
 const (
-	ConceptFileName        = "concept.json"
-	ConceptIdentifierRegex = "^([a-z/]+)@([a-z]+)$"
+	ConceptFileName                               = "concept.json"
+	ConceptIdentifierRegex                        = "^([a-z/]+)@([a-z]+)$"
+	ConceptStringInputType    InputTypeIdentifier = "string"
+	ConceptSelectionInputType InputTypeIdentifier = "select"
+	ConceptJsonnetType        ConceptType         = "jsonnet"
+	ConceptJsonnetfile                            = "jsonnetfile.json"
+	ConceptMainJsonnet                            = "main.jsonnet"
+	ConceptMakefile                               = "Makefile"
+	ConceptLibDir                                 = "lib/"
+	ConceptVendorDir                              = "vendor/"
+	ConceptKlibsonnet                             = "k.libsonnet"
 )
 
 var (
@@ -84,20 +96,37 @@ func (ci ConceptIdentifier) IsValid() bool {
 }
 
 func (ci ConceptIdentifier) Concept() string {
-	getStrings := regexp.MustCompile(ConceptIdentifierRegex).FindAllString
-	return getStrings(ci.String(), -1)[0]
+	getStrings := regexp.MustCompile(ConceptIdentifierRegex).FindStringSubmatch
+	matches := getStrings(ci.String())
+	return matches[1]
 }
 
 func (ci ConceptIdentifier) Repo() string {
-	getStrings := regexp.MustCompile(ConceptIdentifierRegex).FindAllString
-	return getStrings(ci.String(), -1)[1]
+	getStrings := regexp.MustCompile(ConceptIdentifierRegex).FindStringSubmatch
+	matches := getStrings(ci.String())
+	return matches[2]
+
+}
+
+func NewConceptIdentifier(path, repoid string) ConceptIdentifier {
+	return ConceptIdentifier(path + "@" + repoid)
 }
 
 // Concept defines model for Concept.
 type Concept struct {
 	ApiVersion int           `json:"apiVersion"`
+	Type       ConceptType   `json:"type"`
 	Meta       ConceptMeta   `json:"metadata"`
 	Inputs     ConceptInputs `json:"inputs,omitempty"`
+}
+
+type ConceptType string
+
+func (ct ConceptType) IsSupported() bool {
+	if ct == ConceptJsonnetType {
+		return true
+	}
+	return false
 }
 
 // ConceptMeta defines model for ConceptMeta.
@@ -112,18 +141,33 @@ type ConceptInputs struct {
 	Optional  map[string]InputType `json:"optional,omitempty"`
 }
 
-type InputType string
-
-func (it InputType) String() string {
-	return string(it)
+type InputType struct {
+	Type    InputTypeIdentifier `json:"type"`
+	Options string              `json:"options,omitempty"`
 }
 
-func GetConcept(path string, repoid string) (*Concept, error) {
+type InputTypeIdentifier string
+
+func (iti InputTypeIdentifier) IsValid() bool {
+	if iti == ConceptSelectionInputType || iti == ConceptStringInputType {
+		return true
+	}
+	return false
+}
+
+func (iti InputTypeIdentifier) String() string {
+	return string(iti)
+}
+
+func GetConcept(cid ConceptIdentifier) (*Concept, error) {
+	if !cid.IsValid() {
+		return nil, InvalidConceptIdentifierError
+	}
 	concept := Concept{}
-	if !IsInitialized(repoid) {
+	if !IsInitialized(cid.Repo()) {
 		return nil, RepositoryNotInitializedError
 	}
-	content, err := ioutil.ReadFile(filepath.Join(MustGetCacheInfo(repoid).Path, path))
+	content, err := ioutil.ReadFile(filepath.Join(MustGetCacheInfo(cid.Repo()).Path, filepath.Join(cid.Concept(), ConceptFileName)))
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +175,48 @@ func GetConcept(path string, repoid string) (*Concept, error) {
 		return nil, err
 	}
 	return &concept, nil
+}
+
+// Origin defines the git source of origin
+type ConceptOrigin struct {
+	Repository string `json:"repository"`
+	Ref        string `json:"ref"`
+}
+
+func GetConceptOrigin(cid ConceptIdentifier) (*ConceptOrigin, error) {
+	if !cid.IsValid() {
+		return nil, InvalidConceptIdentifierError
+	}
+	if !IsInitialized(cid.Repo()) {
+		return nil, RepositoryNotInitializedError
+	}
+	repo, err := git.PlainOpen(MustGetCacheInfo(cid.Repo()).Path)
+	if err != nil {
+		return nil, err
+	}
+
+	repoURL, err := repo.Remote(git.DefaultRemoteName)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedURL, err := giturls.Parse(repoURL.Config().URLs[0])
+	if err != nil {
+		return nil, err
+	}
+
+	repoID := parsedURL.Host + parsedURL.Path
+
+	ref, err := repo.Head()
+	if err != nil {
+		return nil, err
+	}
+
+	origin := ConceptOrigin{
+		Repository: strings.TrimSuffix(repoID, ".git"),
+		Ref:        ref.Hash().String(),
+	}
+	return &origin, nil
 }
 
 type ConceptRepoInfo struct {
@@ -165,7 +251,7 @@ func ListConceptsForRepo(repoid string) ([]ConceptRepoInfo, error) {
 		return nil, err
 	}
 	for _, entry := range ri.ConceptEntries {
-		c, err := GetConcept(filepath.Join(entry, ConceptFileName), repoid)
+		c, err := GetConcept(NewConceptIdentifier(entry, repoid))
 		if err != nil {
 			return concepts, err
 		}
@@ -190,9 +276,10 @@ func ListConcepts() ([]ConceptRepoInfo, error) {
 	return repoList, nil
 }
 
-func InitConcept(name, conceptType string) error {
+func InitConcept(name string, conceptType ConceptType) error {
 	cpt := Concept{
 		ApiVersion: 1,
+		Type:       conceptType,
 		Meta: ConceptMeta{
 			Name: name,
 		},
@@ -203,20 +290,20 @@ func InitConcept(name, conceptType string) error {
 	}
 
 	switch conceptType {
-	case "jsonnet":
-		if err := createFile(JsonnetMainTemplate, "./main.jsonnet"); err != nil {
+	case ConceptJsonnetType:
+		if err := createFile(JsonnetMainTemplate, ConceptMainJsonnet); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetDepTemplate, "./jsonnetfile.json"); err != nil {
+		if err := createFile(JsonnetDepTemplate, ConceptJsonnetfile); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetMakeFile, "./Makefile"); err != nil {
+		if err := createFile(JsonnetMakeFile, ConceptMakefile); err != nil {
 			return err
 		}
-		if err := os.MkdirAll("./lib", os.ModePerm); err != nil {
+		if err := os.MkdirAll(ConceptLibDir, os.ModePerm); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetLibTemplate, "./lib/k.libsonnet"); err != nil {
+		if err := createFile(JsonnetLibTemplate, filepath.Join(ConceptLibDir, ConceptKlibsonnet)); err != nil {
 			return err
 		}
 
@@ -225,10 +312,8 @@ func InitConcept(name, conceptType string) error {
 		if err != nil {
 			return nil
 		}
-	case "yaml":
-
 	default:
-		return ConceptTypeUnsupported
+		return ConceptTypeUnsupportedError
 	}
 
 	if err := createJson(cpt, "./concept.json"); err != nil {

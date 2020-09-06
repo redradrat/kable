@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var conceptType string
+var conceptTypeInput string
 
 // initConceptCmd represents the initConcept command
 var initConceptCmd = &cobra.Command{
@@ -35,9 +35,14 @@ var initConceptCmd = &cobra.Command{
 			PrintError("unable to initialize concept dir: %s", err)
 		}
 		name := filepath.Base(wd)
-		PrintMsg("Initializing concept '%s' of type '%s'...", name, conceptType)
+		PrintMsg("Initializing concept '%s' of type '%s'...", name, conceptTypeInput)
 
-		if err := kable.InitConcept(name, conceptType); err != nil {
+		ct := kable.ConceptType(conceptTypeInput)
+		if !ct.IsSupported() {
+			PrintError("given concept type is unsupported")
+		}
+
+		if err := kable.InitConcept(name, kable.ConceptType(conceptTypeInput)); err != nil {
 			PrintError("unable to initialize concept dir: %s", err)
 		}
 		PrintSuccess("Successfully initialized Concept!")
@@ -56,7 +61,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	initConceptCmd.Flags().StringVarP(
-		&conceptType,
+		&conceptTypeInput,
 		"type",
 		"t",
 		"jsonnet",
