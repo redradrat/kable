@@ -27,7 +27,7 @@ var conceptTypeInput string
 
 // initConceptCmd represents the initConcept command
 var initConceptCmd = &cobra.Command{
-	Use:   "concept",
+	Use:   "init",
 	Short: "Initialize a concept in the current folder",
 	Run: func(cmd *cobra.Command, args []string) {
 		wd, err := os.Getwd()
@@ -50,7 +50,7 @@ var initConceptCmd = &cobra.Command{
 }
 
 func init() {
-	initCmd.AddCommand(initConceptCmd)
+	conceptCmd.AddCommand(initConceptCmd)
 
 	// Here you will define your flags and configuration settings.
 
