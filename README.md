@@ -3,6 +3,7 @@
 </p>
 
 # Kable
+![Go](https://github.com/redradrat/kable/workflows/Go/badge.svg?branch=master)
 
 A helper to manage kubernetes specs in a GitOps fasion. 
 
