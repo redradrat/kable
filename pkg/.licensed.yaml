@@ -1,0 +1,21 @@
+root: '.'
+
+allowed:
+  - mit
+  - apache-2.0
+  - bsd-2-clause
+  - bsd-3-clause
+
+sources:
+  go:
+    mod: vendor
+
+ignored:
+  go:
+    # ignore all go packages from import paths starting with github.com/internal-package
+    # see the `File.fnmatch?` documentation for details on how patterns are matched.
+    # comparisons use the FNM_CASEFOLD and FNM_PATHNAME flags
+    - golang.org/x/**/*
+
+reviewed:
+  go:
