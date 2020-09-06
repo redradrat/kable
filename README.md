@@ -7,9 +7,6 @@
 
 A helper to manage kubernetes specs in a GitOps fasion. 
 
-## What it does
-
-
 ## Usage
 
 ```
