@@ -1,14 +1,8 @@
-root: '.'
-
 allowed:
   - mit
   - apache-2.0
   - bsd-2-clause
   - bsd-3-clause
-
-sources:
-  go:
-    mod: vendor
 
 ignored:
   go:
@@ -17,5 +11,8 @@ ignored:
     # comparisons use the FNM_CASEFOLD and FNM_PATHNAME flags
     - golang.org/x/**/*
 
-reviewed:
-  go:
+apps:
+  - source_path: 'pkg'
+    sources:
+      go:
+        mod: vendor

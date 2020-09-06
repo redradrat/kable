@@ -20,3 +20,7 @@ vet:
 build:
 	go build -ldflags="-X github.com/redradrat/kable/pkg/cmd.cliVersion=$(CLI_VERSION) -X github.com/redradrat/kable/pkg/cmd.cliDate=$(CLI_DATE)" -o ${BINTARGET}
 	chmod +x ${BINTARGET}
+
+license:
+	licensed cache -c ../.licensed
+	licensed status -c ../.licensed
