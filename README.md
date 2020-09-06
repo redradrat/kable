@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="./assets/kable.png" width="70%" align="center" alt="kable-logo">
+	<img src="./assets/kable.png" width="60%" align="center" alt="kable-logo">
 </p>
 
 # Kable
