@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/redradrat/kable/pkg/kable"
+	"github.com/redradrat/kable/pkg/kable/repositories"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ var updateCmd = &cobra.Command{
 	Short: "Update all the configured repositories",
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Updating repositories...")
-		if err := kable.UpdateRepositories(); err != nil {
+		if err := repositories.UpdateRepositories(); err != nil {
 			PrintError("unable to update repositories: %s", err)
 		}
 		PrintSuccess("Successfully update repositories!")

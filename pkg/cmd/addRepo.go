@@ -21,7 +21,9 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/redradrat/kable/pkg/kable"
+	"github.com/redradrat/kable/pkg/kable/repositories"
+
+	errors2 "github.com/redradrat/kable/pkg/kable/errors"
 
 	"github.com/spf13/cobra"
 )
@@ -51,9 +53,9 @@ var addRepoCmd = &cobra.Command{
 		PrintMsg("Fetching repository...")
 		name := args[0]
 		repoUrl := args[1]
-		err := kable.AddRepository(name, repoUrl, "master")
+		err := repositories.AddRepository(name, repoUrl, "master")
 		if err != nil {
-			if !errors.Is(err, kable.RepositoryAlreadyExistsError) {
+			if !errors.Is(err, errors2.RepositoryAlreadyExistsError) {
 				PrintError("unable to add repository: %s", err)
 			} else {
 				PrintSuccess("Repository already configured!")

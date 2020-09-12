@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/redradrat/kable/pkg/kable"
+	"github.com/redradrat/kable/pkg/kable/repositories"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ var tidyCmd = &cobra.Command{
 	Short: "Clean up removed, cached repos",
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Tidying up cached repositories...")
-		err := kable.TidyRepositories()
+		err := repositories.TidyRepositories()
 		if err != nil {
 			PrintError("unable to clean up repositories: %s", err)
 		}

@@ -1,4 +1,4 @@
-package kable
+package repositories
 
 import (
 	"encoding/json"
@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/redradrat/kable/pkg/kable/config"
+
+	errors2 "github.com/redradrat/kable/pkg/kable/errors"
 
 	"github.com/google/uuid"
 
@@ -23,24 +27,21 @@ type RepoIndex struct {
 	ConceptEntries []string `json:"concepts"`
 }
 
-func ListRepositories() ([][]interface{}, error) {
+func ListRepositories() (map[string]string, error) {
 	idx, err := readCacheIndex()
 	if err != nil {
 		return nil, err
 	}
 
-	var repoSlices [][]interface{}
+	repoMap := map[string]string{}
 	for id, repo := range idx.Index {
 		if repo.SoftDeleted {
 			continue
 		}
-		if IsInitialized(id) {
-			repoSlices = append(repoSlices, []interface{}{id, repo.URI, true})
-		} else {
-			repoSlices = append(repoSlices, []interface{}{id, repo.URI, false})
-		}
+
+		repoMap[id] = repo.URI
 	}
-	return repoSlices, nil
+	return repoMap, nil
 }
 
 type ClonerConfig struct {
@@ -84,7 +85,7 @@ func writeCacheIndexI(ci RepoCache, init bool) error {
 		}
 
 		if ci.modCount != oldIdx.modCount {
-			return StaleRepoCacheIndexError
+			return errors2.StaleRepoCacheIndexError
 		}
 	}
 
@@ -95,7 +96,7 @@ func writeCacheIndexI(ci RepoCache, init bool) error {
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(filepath.Join(userDir, "repo.cache"), out, 0666); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(config.UserDir, "repo.cache"), out, 0666); err != nil {
 		return err
 	}
 
@@ -104,7 +105,7 @@ func writeCacheIndexI(ci RepoCache, init bool) error {
 
 func readCacheIndex() (RepoCache, error) {
 	index := NewRepoCache()
-	content, err := ioutil.ReadFile(filepath.Join(userDir, "repo.cache"))
+	content, err := ioutil.ReadFile(filepath.Join(config.UserDir, "repo.cache"))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return index, err
@@ -161,7 +162,7 @@ func DeactivateRepoCache(id string) error {
 		cache.Index[id] = entry
 
 		if err := writeCacheIndex(cache); err != nil {
-			if errors.Is(err, StaleRepoCacheIndexError) {
+			if errors.Is(err, errors2.StaleRepoCacheIndexError) {
 				continue
 			}
 			return err
@@ -185,13 +186,13 @@ func ActivateRepoCache(oldid, newid string) error {
 
 		if oldid != newid {
 			delete(cache.Index, oldid)
-			if err := os.Rename(filepath.Join(repoDir, oldid), filepath.Join(repoDir, newid)); err != nil {
+			if err := os.Rename(filepath.Join(config.RepoDir, oldid), filepath.Join(config.RepoDir, newid)); err != nil {
 				return err
 			}
 		}
 
 		if err := writeCacheIndex(cache); err != nil {
-			if errors.Is(err, StaleRepoCacheIndexError) {
+			if errors.Is(err, errors2.StaleRepoCacheIndexError) {
 				continue
 			}
 			return err
@@ -210,7 +211,7 @@ func RemoveFromCacheIndex(id string) error {
 
 		delete(cache.Index, id)
 		if err := writeCacheIndex(cache); err != nil {
-			if errors.Is(err, StaleRepoCacheIndexError) {
+			if errors.Is(err, errors2.StaleRepoCacheIndexError) {
 				continue
 			}
 			return err
@@ -246,14 +247,14 @@ func TidyRepositories() error {
 	}
 
 	// Go through index, and delete all repositories, that are not used in the current config
-	fi, err := ioutil.ReadDir(repoDir)
+	fi, err := ioutil.ReadDir(config.RepoDir)
 	if err != nil {
 		return err
 	}
 
 	for _, ref := range fi {
 		if _, exists := idx.Index[ref.Name()]; !exists || idx.Index[ref.Name()].SoftDeleted == true {
-			if err := os.RemoveAll(filepath.Join(repoDir, ref.Name())); err != nil {
+			if err := os.RemoveAll(filepath.Join(config.RepoDir, ref.Name())); err != nil {
 				return err
 			}
 			if err := RemoveFromCacheIndex(ref.Name()); err != nil {
@@ -272,7 +273,7 @@ func AddRepository(id, url, branch string) error {
 	}
 
 	if _, exists := idx.Index[id]; exists && !idx.Index[id].SoftDeleted {
-		return RepositoryAlreadyExistsError
+		return errors2.RepositoryAlreadyExistsError
 	}
 
 	// Now let's first check if we have a repo cached.
@@ -336,7 +337,7 @@ func UpdateRepositories() error {
 }
 
 func cloneRepo(name, url, branch string) error {
-	repopath := filepath.Join(repoDir, name)
+	repopath := filepath.Join(config.RepoDir, name)
 	refName := plumbing.NewBranchReferenceName(branch)
 	err := clone(ClonerConfig{
 		CloneOptions: git.CloneOptions{
@@ -358,7 +359,7 @@ func cloneRepo(name, url, branch string) error {
 			return err
 		}
 		if os.IsNotExist(err) {
-			return RepositoryInvalidError
+			return errors2.RepositoryInvalidError
 		}
 		return err
 	}
@@ -369,7 +370,7 @@ func cloneRepo(name, url, branch string) error {
 			return err
 		}
 		if _, ok := err.(*json.UnmarshalTypeError); ok {
-			return RepositoryInvalidError
+			return errors2.RepositoryInvalidError
 		}
 		return err
 	}

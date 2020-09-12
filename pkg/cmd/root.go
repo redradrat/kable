@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redradrat/kable/pkg/kable"
+	"github.com/redradrat/kable/pkg/kable/config"
 
 	"github.com/spf13/cobra"
 )
 
 var cfgFile string
-var Config *kable.Config
+var Config *config.Config
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{}
@@ -44,7 +44,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	usedConfig, err := kable.ReadConfig(cfgFile)
+	usedConfig, err := config.ReadConfig(cfgFile)
 	if err != nil {
 		PrintError("Cannot read config file: %s \n", err)
 	}

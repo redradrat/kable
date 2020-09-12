@@ -18,7 +18,7 @@ package cmd
 import (
 	"errors"
 
-	"github.com/redradrat/kable/pkg/kable"
+	"github.com/redradrat/kable/pkg/kable/concepts"
 
 	"github.com/spf13/cobra"
 )
@@ -26,35 +26,36 @@ import (
 var outpath string
 var targetType string
 
-// createAppCmd represents the create command
-var createAppCmd = &cobra.Command{
-	Use:   "create [NAME] [CONCEPT@REPO]",
-	Short: "A brief description of your command",
+// renderConceptCmd represents the create command
+var renderConceptCmd = &cobra.Command{
+	Use:   "render [CONCEPT@REPO] [NAME]",
+	Short: "RenderMeta a given concept",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			return errors.New("requires exactly TWO arguments")
+			return errors.New("requires exactly THREE arguments")
 		}
-		name := args[0]
-		conceptIdentifier := args[1]
+		conceptIdentifier := args[0]
+		name := args[1]
 
-		if !kable.AppNameIsValid(name) {
-			PrintError("invalid name given: %s", args[0])
+		if !concepts.RenderNameIsValid(name) {
+			PrintError("invalid name given: %s", name)
 		}
 
-		if !kable.IsValidConceptIdentifier(conceptIdentifier) {
-			PrintError("invalid concept identifier given: %s", args[1])
+		if !concepts.IsValidConceptIdentifier(conceptIdentifier) {
+			PrintError("invalid concept identifier given: %s", conceptIdentifier)
 		}
+
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		PrintMsg("Creating AppV1...")
+		PrintMsg("Creating ConceptRenderV1...")
 
-		name := args[0]
+		name := args[1]
+		conceptIdentifier := concepts.ConceptIdentifier(args[0])
 
 		// First let's get our concept... maybe it doesn't even exist, hm? meow
-		conceptIdentifier := kable.ConceptIdentifier(args[1])
-		PrintMsg("Fetching Concept '%s'...", args[0])
-		cpt, err := kable.GetConcept(conceptIdentifier)
+		PrintMsg("Fetching Concept '%s'...", conceptIdentifier.String())
+		cpt, err := concepts.GetConcept(conceptIdentifier)
 		if err != nil {
 			PrintError("unable to get specified concept: %s", err)
 		}
@@ -66,13 +67,13 @@ var createAppCmd = &cobra.Command{
 		}
 
 		// Now let's render our app
-		PrintMsg("Rendering AppV1...")
-		app, err := kable.NewAppV1(name, avs)
+		PrintMsg("Rendering ConceptRenderV1...")
+		app, err := concepts.NewRenderV1(name, avs)
 		if err != nil {
 			PrintError("unable to render app: %s", err)
 		}
 
-		if err := kable.RenderApp(app, conceptIdentifier, outpath, kable.YamlTarget{}); err != nil {
+		if err := concepts.RenderConcept(app, conceptIdentifier, outpath, concepts.YamlTarget{}); err != nil {
 			PrintError("unable to render app: %s", err)
 		}
 
@@ -81,16 +82,16 @@ var createAppCmd = &cobra.Command{
 }
 
 func init() {
-	appCmd.AddCommand(createAppCmd)
+	conceptCmd.AddCommand(renderConceptCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// createAppCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// renderConceptCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	createAppCmd.Flags().StringVarP(&outpath, "output", "o", ".", "The output directory this app will be placed in")
-	createAppCmd.Flags().StringVarP(&targetType, "targetType", "t", "yaml", "The target format, this AppV1 will be rendered as")
+	renderConceptCmd.Flags().StringVarP(&outpath, "output", "o", ".", "The output directory this app will be placed in")
+	renderConceptCmd.Flags().StringVarP(&targetType, "targetType", "t", "yaml", "The target format, this ConceptRenderV1 will be rendered as")
 }

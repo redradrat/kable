@@ -1,10 +1,14 @@
-package kable
+package concepts
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/redradrat/kable/pkg/kable/repositories"
+
+	"github.com/redradrat/kable/pkg/kable/errors"
 
 	"github.com/google/go-jsonnet"
 )
@@ -24,7 +28,7 @@ type Bundle struct {
 // Target is the interface for all Target implementations
 type Target interface {
 	TargetName() string
-	RenderBundle(app *AppV1, ci ConceptIdentifier, outpath string) (*Bundle, error)
+	RenderBundle(app *ConceptRenderV1, ci ConceptIdentifier, outpath string) (*Bundle, error)
 }
 
 func (b Bundle) Write() error {
@@ -47,9 +51,9 @@ func (y YamlTarget) TargetName() string {
 	return YamlTargetIdentifier
 }
 
-func (y YamlTarget) RenderBundle(app *AppV1, ci ConceptIdentifier, outpath string) (*Bundle, error) {
+func (y YamlTarget) RenderBundle(cr *ConceptRenderV1, ci ConceptIdentifier, outpath string) (*Bundle, error) {
 	bundle := Bundle{
-		baseDir: filepath.Join(outpath, app.Meta.Name),
+		baseDir: filepath.Join(outpath, cr.Meta.Name),
 	}
 
 	cpt, err := GetConcept(ci)
@@ -58,33 +62,33 @@ func (y YamlTarget) RenderBundle(app *AppV1, ci ConceptIdentifier, outpath strin
 	}
 
 	// As the initialization check has been done via GetConcept
-	cache := MustGetCacheInfo(ci.Repo())
+	cache := repositories.MustGetCacheInfo(ci.Repo())
 
 	switch cpt.Type {
 	case ConceptJsonnetType:
-		bundle.files, err = renderJsonnetConcept(app.Meta.Name, filepath.Join(cache.Path, ci.Concept()), app.Values)
+		bundle.files, err = renderJsonnetConcept(cr.Meta.Name, filepath.Join(cache.Path, ci.Concept()), cr.Values)
 		if err != nil {
 			return nil, err
 		}
 	default:
-		return nil, ConceptTypeUnsupportedError
+		return nil, errors.ConceptTypeUnsupportedError
 
 	}
 
-	appFile, err := json.MarshalIndent(app, "", "	")
+	appFile, err := json.MarshalIndent(cr, "", "	")
 	if err != nil {
 		return nil, err
 	}
 
 	bundle.files = append(bundle.files, file{
-		path:    "App.json",
+		path:    ConceptRenderFileName,
 		content: appFile,
 	})
 
 	return &bundle, nil
 }
 
-func renderJsonnetConcept(name, path string, avs *AppValues) ([]file, error) {
+func renderJsonnetConcept(name, path string, avs *RenderValues) ([]file, error) {
 	var bundle []file
 
 	vm := jsonnet.MakeVM()

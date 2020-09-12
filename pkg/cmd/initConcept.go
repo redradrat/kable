@@ -19,7 +19,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redradrat/kable/pkg/kable"
+	"github.com/redradrat/kable/pkg/kable/concepts"
+
 	"github.com/spf13/cobra"
 )
 
@@ -37,12 +38,12 @@ var initConceptCmd = &cobra.Command{
 		name := filepath.Base(wd)
 		PrintMsg("Initializing concept '%s' of type '%s'...", name, conceptTypeInput)
 
-		ct := kable.ConceptType(conceptTypeInput)
+		ct := concepts.ConceptType(conceptTypeInput)
 		if !ct.IsSupported() {
 			PrintError("given concept type is unsupported")
 		}
 
-		if err := kable.InitConcept(name, kable.ConceptType(conceptTypeInput)); err != nil {
+		if err := concepts.InitConcept(name, concepts.ConceptType(conceptTypeInput)); err != nil {
 			PrintError("unable to initialize concept dir: %s", err)
 		}
 		PrintSuccess("Successfully initialized Concept!")

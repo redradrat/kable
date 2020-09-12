@@ -1,4 +1,4 @@
-package kable
+package errors
 
 import "errors"
 
@@ -12,5 +12,5 @@ var (
 	ConceptTypeUnsupportedError   = errors.New("given concept type is not supported")
 	RenderTargetUnsupportedError  = errors.New("desired render target is not supported")
 	InvalidConceptIdentifierError = errors.New("given concept identifier is invalid")
-	InvalidAppNameError           = errors.New("given app name is invalid (only allowed: 'a-z', '-', '_')")
+	InvalidRenderNameError        = errors.New("given app name is invalid (only allowed: 'a-z', '-', '_')")
 )

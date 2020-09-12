@@ -3,20 +3,21 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/redradrat/kable/pkg/kable/concepts"
+
 	"github.com/manifoldco/promptui"
-	"github.com/redradrat/kable/pkg/kable"
 )
 
 type InputDialog struct {
-	inputs kable.ConceptInputs
+	inputs concepts.ConceptInputs
 }
 
-func NewInputDialog(inputs kable.ConceptInputs) InputDialog {
+func NewInputDialog(inputs concepts.ConceptInputs) InputDialog {
 	return InputDialog{inputs: inputs}
 }
 
-func (id InputDialog) RunInputDialog() (*kable.AppValues, error) {
-	values := kable.AppValues{}
+func (id InputDialog) RunInputDialog() (*concepts.RenderValues, error) {
+	values := concepts.RenderValues{}
 	PrintMsg("Mandatory Values")
 	for id, input := range id.inputs.Mandatory {
 		value, err := getValue(id, input)
@@ -38,10 +39,10 @@ func (id InputDialog) RunInputDialog() (*kable.AppValues, error) {
 	return &values, nil
 }
 
-func getValue(name string, input kable.InputType) (kable.ValueType, error) {
-	var value kable.ValueType
+func getValue(name string, input concepts.InputType) (concepts.ValueType, error) {
+	var value concepts.ValueType
 	switch input.Type {
-	case kable.ConceptStringInputType:
+	case concepts.ConceptStringInputType:
 		prompt := promptui.Prompt{
 			Label: name,
 		}
@@ -51,8 +52,8 @@ func getValue(name string, input kable.InputType) (kable.ValueType, error) {
 			return nil, err
 		}
 
-		value = kable.StringValueType(result)
-	case kable.ConceptSelectionInputType:
+		value = concepts.StringValueType(result)
+	case concepts.ConceptSelectionInputType:
 		prompt := promptui.Select{
 			Label: name,
 			Items: input.Options,
@@ -63,7 +64,7 @@ func getValue(name string, input kable.InputType) (kable.ValueType, error) {
 			return nil, err
 		}
 
-		value = kable.SelectValueType(result)
+		value = concepts.SelectValueType(result)
 	default:
 		return nil, fmt.Errorf("input type not supported")
 	}

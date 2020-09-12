@@ -1,4 +1,4 @@
-package kable
+package concepts
 
 import (
 	"encoding/json"
@@ -10,8 +10,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/redradrat/kable/pkg/kable/repositories"
+
+	"github.com/redradrat/kable/pkg/kable/errors"
+
 	"github.com/go-git/go-git/v5"
-	"github.com/whilp/git-urls"
+	giturls "github.com/whilp/git-urls"
 )
 
 const (
@@ -26,6 +30,7 @@ const (
 	ConceptLibDir                                 = "lib/"
 	ConceptVendorDir                              = "vendor/"
 	ConceptKlibsonnet                             = "k.libsonnet"
+	ConceptRenderFileName                         = "renderinfo.json"
 )
 
 var (
@@ -161,13 +166,13 @@ func (iti InputTypeIdentifier) String() string {
 
 func GetConcept(cid ConceptIdentifier) (*Concept, error) {
 	if !cid.IsValid() {
-		return nil, InvalidConceptIdentifierError
+		return nil, errors.InvalidConceptIdentifierError
 	}
 	concept := Concept{}
-	if !IsInitialized(cid.Repo()) {
-		return nil, RepositoryNotInitializedError
+	if !repositories.IsInitialized(cid.Repo()) {
+		return nil, errors.RepositoryNotInitializedError
 	}
-	content, err := ioutil.ReadFile(filepath.Join(MustGetCacheInfo(cid.Repo()).Path, filepath.Join(cid.Concept(), ConceptFileName)))
+	content, err := ioutil.ReadFile(filepath.Join(repositories.MustGetCacheInfo(cid.Repo()).Path, filepath.Join(cid.Concept(), ConceptFileName)))
 	if err != nil {
 		return nil, err
 	}
@@ -185,12 +190,12 @@ type ConceptOrigin struct {
 
 func GetConceptOrigin(cid ConceptIdentifier) (*ConceptOrigin, error) {
 	if !cid.IsValid() {
-		return nil, InvalidConceptIdentifierError
+		return nil, errors.InvalidConceptIdentifierError
 	}
-	if !IsInitialized(cid.Repo()) {
-		return nil, RepositoryNotInitializedError
+	if !repositories.IsInitialized(cid.Repo()) {
+		return nil, errors.RepositoryNotInitializedError
 	}
-	repo, err := git.PlainOpen(MustGetCacheInfo(cid.Repo()).Path)
+	repo, err := git.PlainOpen(repositories.MustGetCacheInfo(cid.Repo()).Path)
 	if err != nil {
 		return nil, err
 	}
@@ -243,10 +248,10 @@ func (mi MaintainerInfo) String() string {
 
 func ListConceptsForRepo(repoid string) ([]ConceptRepoInfo, error) {
 	var concepts []ConceptRepoInfo
-	if !IsInitialized(repoid) {
+	if !repositories.IsInitialized(repoid) {
 		return concepts, nil
 	}
-	ri, err := GetRepoIndex(repoid)
+	ri, err := repositories.GetRepoIndex(repoid)
 	if err != nil {
 		return nil, err
 	}
@@ -262,11 +267,11 @@ func ListConceptsForRepo(repoid string) ([]ConceptRepoInfo, error) {
 
 func ListConcepts() ([]ConceptRepoInfo, error) {
 	var repoList []ConceptRepoInfo
-	idx, err := readCacheIndex()
+	repos, err := repositories.ListRepositories()
 	if err != nil {
 		return nil, err
 	}
-	for id, _ := range idx.Index {
+	for id, _ := range repos {
 		concepts, err := ListConceptsForRepo(id)
 		if err != nil {
 			return nil, err
@@ -313,7 +318,7 @@ func InitConcept(name string, conceptType ConceptType) error {
 			return nil
 		}
 	default:
-		return ConceptTypeUnsupportedError
+		return errors.ConceptTypeUnsupportedError
 	}
 
 	if err := createJson(cpt, "./concept.json"); err != nil {

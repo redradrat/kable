@@ -19,7 +19,8 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/redradrat/kable/pkg/kable"
+	"github.com/redradrat/kable/pkg/kable/repositories"
+
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +45,7 @@ var removeCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Removing repository...")
-		if err := kable.RemoveRepository(args[0]); err != nil {
+		if err := repositories.RemoveRepository(args[0]); err != nil {
 			PrintError("unable to remove repository: %s \n", err)
 		}
 		PrintSuccess("Successfully removed repository!")
