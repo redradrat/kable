@@ -70,13 +70,16 @@ var renderConceptCmd = &cobra.Command{
 		PrintMsg("Rendering ConceptRenderV1...")
 		app, err := concepts.NewRenderV1(name, avs)
 		if err != nil {
-			PrintError("unable to render app: %s", err)
+			PrintError("unable to render concept: %s", err)
 		}
 
-		if err := concepts.RenderConcept(app, conceptIdentifier, outpath, concepts.YamlTarget{}); err != nil {
-			PrintError("unable to render app: %s", err)
+		bundle, err := concepts.RenderConcept(app, conceptIdentifier, outpath, concepts.YamlTarget{})
+		if err != nil {
+			PrintError("unable to render concept: %s", err)
 		}
-
+		if err := bundle.Write(); err != nil {
+			PrintError("unable to write rendered concept to file system: %s", err)
+		}
 		PrintSuccess("Successfully created app at: %s", outpath)
 	},
 }

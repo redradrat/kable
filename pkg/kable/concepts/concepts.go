@@ -30,6 +30,7 @@ const (
 	ConceptLibDir                                 = "lib/"
 	ConceptVendorDir                              = "vendor/"
 	ConceptKlibsonnet                             = "k.libsonnet"
+	ConceptMainlibsonnet                          = "main.libsonnet"
 	ConceptRenderFileName                         = "renderinfo.json"
 )
 
@@ -306,6 +307,9 @@ func InitConcept(name string, conceptType ConceptType) error {
 			return err
 		}
 		if err := os.MkdirAll(ConceptLibDir, os.ModePerm); err != nil {
+			return err
+		}
+		if err := createFile(JsonnetLibTemplate, filepath.Join(ConceptLibDir, ConceptMainlibsonnet)); err != nil {
 			return err
 		}
 		if err := createFile(JsonnetLibTemplate, filepath.Join(ConceptLibDir, ConceptKlibsonnet)); err != nil {

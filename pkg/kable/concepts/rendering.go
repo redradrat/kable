@@ -76,21 +76,13 @@ func NewRenderV1(name string, avs *RenderValues) (*ConceptRenderV1, error) {
 	return &app, nil
 }
 
-func RenderConcept(cr *ConceptRenderV1, ci ConceptIdentifier, output string, target Target) error {
+func RenderConcept(cr *ConceptRenderV1, ci ConceptIdentifier, output string, target Target) (*Bundle, error) {
 	var err error
 
 	cr.Origin, err = GetConceptOrigin(ci)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	bundle, err := target.RenderBundle(cr, ci, output)
-	if err != nil {
-		return err
-	}
-	if err := bundle.Write(); err != nil {
-		return err
-	}
-
-	return nil
+	return target.RenderBundle(cr, ci, output)
 }
