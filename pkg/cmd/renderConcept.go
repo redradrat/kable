@@ -78,7 +78,7 @@ var renderConceptCmd = &cobra.Command{
 		if err := bundle.Write(); err != nil {
 			PrintError("unable to write rendered concept to file system: %s", err)
 		}
-		PrintSuccess("Successfully created concept at: %s", outpath)
+		PrintSuccess("Successfully created concept!", outpath)
 	},
 }
 
