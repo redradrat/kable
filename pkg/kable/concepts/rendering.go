@@ -76,8 +76,16 @@ func NewRenderV1(name string, avs *RenderValues) (*ConceptRenderV1, error) {
 	return &app, nil
 }
 
-func RenderConcept(cr *ConceptRenderV1, ci ConceptIdentifier, output string, target Target) (*Bundle, error) {
+func RenderConcept(cr *ConceptRenderV1, ci ConceptIdentifier, output string, ttype TargetType) (*Bundle, error) {
 	var err error
+
+	var target Target
+	switch ttype {
+	case YamlTargetType:
+		target = YamlTarget{}
+	case CRDTargetType:
+		target = CRDTarget{}
+	}
 
 	cr.Origin, err = GetConceptOrigin(ci)
 	if err != nil {

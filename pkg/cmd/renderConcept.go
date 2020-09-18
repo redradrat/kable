@@ -48,8 +48,6 @@ var renderConceptCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		PrintMsg("Creating ConceptRenderV1...")
-
 		name := args[1]
 		conceptIdentifier := concepts.ConceptIdentifier(args[0])
 
@@ -67,20 +65,20 @@ var renderConceptCmd = &cobra.Command{
 		}
 
 		// Now let's render our app
-		PrintMsg("Rendering ConceptRenderV1...")
+		PrintMsg("Rendering concept...")
 		app, err := concepts.NewRenderV1(name, avs)
 		if err != nil {
 			PrintError("unable to render concept: %s", err)
 		}
 
-		bundle, err := concepts.RenderConcept(app, conceptIdentifier, outpath, concepts.YamlTarget{})
+		bundle, err := concepts.RenderConcept(app, conceptIdentifier, outpath, concepts.TargetType(targetType))
 		if err != nil {
 			PrintError("unable to render concept: %s", err)
 		}
 		if err := bundle.Write(); err != nil {
 			PrintError("unable to write rendered concept to file system: %s", err)
 		}
-		PrintSuccess("Successfully created app at: %s", outpath)
+		PrintSuccess("Successfully created concept at: %s", outpath)
 	},
 }
 
@@ -96,5 +94,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	renderConceptCmd.Flags().StringVarP(&outpath, "output", "o", ".", "The output directory this app will be placed in")
-	renderConceptCmd.Flags().StringVarP(&targetType, "targetType", "t", "yaml", "The target format, this ConceptRenderV1 will be rendered as")
+	renderConceptCmd.Flags().StringVarP(&targetType, "targetType", "t", string(concepts.YamlTargetType), "The target format, this ConceptRenderV1 will be rendered as")
 }

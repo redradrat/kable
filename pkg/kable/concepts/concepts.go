@@ -36,25 +36,38 @@ const (
 
 var (
 	IsValidConceptIdentifier = regexp.MustCompile(ConceptIdentifierRegex).MatchString
-	JsonnetMainTemplate      = []byte(`local kausal = import "ksonnet-util/kausal.libsonnet";
+	JsonnetMainTemplate      = []byte(`local lib = import 'lib/main.libsonnet';
 
+// Final JSON Output
+[
+  lib.new(std.extVar("instanceName"))
+]
+`)
+	JsonnetMainLibTemplate = []byte(`local kausal = import "ksonnet-util/kausal.libsonnet";
+
+local deployment = kausal.apps.v1.deployment;
 local container = kausal.core.v1.container;
 local port = kausal.core.v1.containerPort;
 local service = kausal.core.v1.service;
 
-local echoServDeployment = deployment.new(
-    name=std.extVar("instanceName"), replicas=1,
-    containers=[
-      container.new("echoserver", "k8s.gcr.io/echoserver:1.4")
-      + container.withPorts([port.new("ui", "8080")]),
-    ],
-  );
+local grafanaDeploy(name) = deployment.new(
+        name=name, replicas=2,
+        containers=[
+          container.new("grafana", "grafana/grafana")
+          + container.withPorts([port.new("ui", 10330)]),
+        ],
+      );
 
-[
-  echoServDeployment,
-  kausal.util.serviceFor(echoServDeployment),
-]
+
+// Final JSON Object
+{
+  new(name):: [
+    grafanaDeploy(name),
+    kausal.util.serviceFor(grafanaDeploy(name))
+  ]
+}
 `)
+
 	JsonnetLibTemplate = []byte(`(import "github.com/jsonnet-libs/k8s-alpha/1.14/main.libsonnet")
 + (import "github.com/jsonnet-libs/k8s-alpha/1.14/extensions/kausal-shim.libsonnet")
 `)
@@ -309,7 +322,7 @@ func InitConcept(name string, conceptType ConceptType) error {
 		if err := os.MkdirAll(ConceptLibDir, os.ModePerm); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetLibTemplate, filepath.Join(ConceptLibDir, ConceptMainlibsonnet)); err != nil {
+		if err := createFile(JsonnetMainLibTemplate, filepath.Join(ConceptLibDir, ConceptMainlibsonnet)); err != nil {
 			return err
 		}
 		if err := createFile(JsonnetLibTemplate, filepath.Join(ConceptLibDir, ConceptKlibsonnet)); err != nil {

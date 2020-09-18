@@ -6,6 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ghodss/yaml"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/redradrat/kable/pkg/kable/repositories"
 
 	"github.com/redradrat/kable/pkg/kable/errors"
@@ -13,7 +17,12 @@ import (
 	"github.com/google/go-jsonnet"
 )
 
-const YamlTargetIdentifier = "yaml"
+const (
+	YamlTargetType TargetType = "yaml"
+	CRDTargetType  TargetType = "crd"
+)
+
+type TargetType string
 
 type file struct {
 	path    string
@@ -44,11 +53,22 @@ func (b Bundle) Write() error {
 	return nil
 }
 
+type CRDTarget struct {
+}
+
+func (c CRDTarget) TargetName() string {
+	return string(CRDTargetType)
+}
+
+func (c CRDTarget) RenderBundle(app *ConceptRenderV1, ci ConceptIdentifier, outpath string) (*Bundle, error) {
+	panic("implement me")
+}
+
 type YamlTarget struct {
 }
 
 func (y YamlTarget) TargetName() string {
-	return YamlTargetIdentifier
+	return string(YamlTargetType)
 }
 
 func (y YamlTarget) RenderBundle(cr *ConceptRenderV1, ci ConceptIdentifier, outpath string) (*Bundle, error) {
@@ -108,14 +128,43 @@ func renderJsonnetConcept(name, path string, avs *RenderValues) ([]file, error) 
 		return nil, err
 	}
 
-	out, err := vm.EvaluateSnippet(ConceptMainJsonnet, string(mainJsonnet))
+	jsonnetout, err := vm.EvaluateSnippet(ConceptMainJsonnet, string(mainJsonnet))
+	if err != nil {
+		return nil, err
+	}
+
+	var objs unstructured.UnstructuredList
+
+	// attempt to unmarshal either array or single object
+	var jsonObjs []unstructured.Unstructured
+	err = json.Unmarshal([]byte(jsonnetout), &jsonObjs)
+	if err == nil {
+		objs.Items = append(objs.Items, jsonObjs...)
+	} else {
+		var jsonObj unstructured.Unstructured
+		err = json.Unmarshal([]byte(jsonnetout), &jsonObj)
+		if err != nil {
+			return nil, err
+		}
+		objs.Items = append(objs.Items, jsonObj)
+	}
+
+	objs.SetAPIVersion("v1")
+	objs.SetKind("List")
+
+	jsonout, err := objs.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	yamlout, err := yaml.JSONToYAML(jsonout)
 	if err != nil {
 		return nil, err
 	}
 
 	bundle = append(bundle, file{
 		path:    name + ".yaml",
-		content: []byte(out),
+		content: yamlout,
 	})
 
 	return bundle, nil
