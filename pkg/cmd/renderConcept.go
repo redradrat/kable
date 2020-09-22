@@ -24,22 +24,17 @@ import (
 )
 
 var outpath string
-var targetType string
+var conceptRenderTargetType string
 
 // renderConceptCmd represents the create command
 var renderConceptCmd = &cobra.Command{
-	Use:   "render [CONCEPT@REPO] [NAME]",
+	Use:   "render [CONCEPT@REPO]",
 	Short: "RenderMeta a given concept",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return errors.New("requires exactly THREE arguments")
+		if len(args) != 1 {
+			return errors.New("requires exactly ONE arguments")
 		}
 		conceptIdentifier := args[0]
-		name := args[1]
-
-		if !concepts.RenderNameIsValid(name) {
-			PrintError("invalid name given: %s", name)
-		}
 
 		if !concepts.IsValidConceptIdentifier(conceptIdentifier) {
 			PrintError("invalid concept identifier given: %s", conceptIdentifier)
@@ -48,12 +43,11 @@ var renderConceptCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		name := args[1]
 		conceptIdentifier := concepts.ConceptIdentifier(args[0])
 
 		// First let's get our concept... maybe it doesn't even exist, hm? meow
 		PrintMsg("Fetching Concept '%s'...", conceptIdentifier.String())
-		cpt, err := concepts.GetConcept(conceptIdentifier)
+		cpt, err := concepts.GetRepoConcept(conceptIdentifier)
 		if err != nil {
 			PrintError("unable to get specified concept: %s", err)
 		}
@@ -66,19 +60,14 @@ var renderConceptCmd = &cobra.Command{
 
 		// Now let's render our app
 		PrintMsg("Rendering concept...")
-		app, err := concepts.NewRenderV1(name, avs)
+		bundle, err := concepts.RenderRepoConcept(avs, conceptIdentifier, concepts.TargetType(conceptRenderTargetType))
 		if err != nil {
 			PrintError("unable to render concept: %s", err)
 		}
-
-		bundle, err := concepts.RenderConcept(app, conceptIdentifier, outpath, concepts.TargetType(targetType))
-		if err != nil {
-			PrintError("unable to render concept: %s", err)
-		}
-		if err := bundle.Write(); err != nil {
+		if err := bundle.Write(outpath); err != nil {
 			PrintError("unable to write rendered concept to file system: %s", err)
 		}
-		PrintSuccess("Successfully created concept!", outpath)
+		PrintSuccess("Successfully created concept!")
 	},
 }
 
@@ -94,5 +83,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	renderConceptCmd.Flags().StringVarP(&outpath, "output", "o", ".", "The output directory this app will be placed in")
-	renderConceptCmd.Flags().StringVarP(&targetType, "targetType", "t", string(concepts.YamlTargetType), "The target format, this ConceptRenderV1 will be rendered as")
+	renderConceptCmd.Flags().StringVarP(&conceptRenderTargetType, "targetType", "t", string(concepts.YamlTargetType), "The target format, this concept will be rendered as")
 }

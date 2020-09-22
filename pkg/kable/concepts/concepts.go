@@ -39,9 +39,7 @@ var (
 	JsonnetMainTemplate      = []byte(`local lib = import 'lib/main.libsonnet';
 
 // Final JSON Output
-[
-  lib.new(std.extVar("instanceName"))
-]
+lib.new(std.extVar("instanceName"))
 `)
 	JsonnetMainLibTemplate = []byte(`local kausal = import "ksonnet-util/kausal.libsonnet";
 
@@ -97,7 +95,7 @@ local grafanaDeploy(name) = deployment.new(
 }
 `)
 	JsonnetMakeFile = []byte(`render:
-	jsonnet main.jsonnet -J lib -J vendor --ext-str instanceName="dummy" | yq r --prettyPrint -
+	kable dev render .
 
 install:
 	jb install
@@ -162,7 +160,7 @@ type ConceptInputs struct {
 
 type InputType struct {
 	Type    InputTypeIdentifier `json:"type"`
-	Options string              `json:"options,omitempty"`
+	Options []string            `json:"options,omitempty"`
 }
 
 type InputTypeIdentifier string
@@ -178,15 +176,27 @@ func (iti InputTypeIdentifier) String() string {
 	return string(iti)
 }
 
-func GetConcept(cid ConceptIdentifier) (*Concept, error) {
+func GetRepoConcept(cid ConceptIdentifier) (*Concept, error) {
+	path, err := GetRepoConceptPath(cid)
+	if err != nil {
+		return nil, err
+	}
+	return GetConcept(path)
+}
+
+func GetRepoConceptPath(cid ConceptIdentifier) (string, error) {
 	if !cid.IsValid() {
-		return nil, errors.InvalidConceptIdentifierError
+		return "", errors.InvalidConceptIdentifierError
 	}
-	concept := Concept{}
 	if !repositories.IsInitialized(cid.Repo()) {
-		return nil, errors.RepositoryNotInitializedError
+		return "", errors.RepositoryNotInitializedError
 	}
-	content, err := ioutil.ReadFile(filepath.Join(repositories.MustGetCacheInfo(cid.Repo()).Path, filepath.Join(cid.Concept(), ConceptFileName)))
+	return filepath.Join(repositories.MustGetCacheInfo(cid.Repo()).AbsolutePath(), filepath.Join(cid.Concept())), nil
+}
+
+func GetConcept(path string) (*Concept, error) {
+	concept := Concept{}
+	content, err := ioutil.ReadFile(filepath.Join(path, ConceptFileName))
 	if err != nil {
 		return nil, err
 	}
@@ -194,6 +204,7 @@ func GetConcept(cid ConceptIdentifier) (*Concept, error) {
 		return nil, err
 	}
 	return &concept, nil
+
 }
 
 // Origin defines the git source of origin
@@ -209,7 +220,7 @@ func GetConceptOrigin(cid ConceptIdentifier) (*ConceptOrigin, error) {
 	if !repositories.IsInitialized(cid.Repo()) {
 		return nil, errors.RepositoryNotInitializedError
 	}
-	repo, err := git.PlainOpen(repositories.MustGetCacheInfo(cid.Repo()).Path)
+	repo, err := git.PlainOpen(repositories.MustGetCacheInfo(cid.Repo()).AbsolutePath())
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +281,7 @@ func ListConceptsForRepo(repoid string) ([]ConceptRepoInfo, error) {
 		return nil, err
 	}
 	for _, entry := range ri.ConceptEntries {
-		c, err := GetConcept(NewConceptIdentifier(entry, repoid))
+		c, err := GetRepoConcept(NewConceptIdentifier(entry, repoid))
 		if err != nil {
 			return concepts, err
 		}
@@ -303,8 +314,16 @@ func InitConcept(name string, conceptType ConceptType) error {
 			Name: name,
 		},
 		Inputs: ConceptInputs{
-			Mandatory: map[string]InputType{},
-			Optional:  nil,
+			Mandatory: map[string]InputType{
+				"instanceName": {
+					Type: ConceptStringInputType,
+				},
+				"nameSelection": {
+					Type:    ConceptSelectionInputType,
+					Options: []string{"Option 1", "Option 2"},
+				},
+			},
+			Optional: nil,
 		},
 	}
 

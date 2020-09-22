@@ -55,11 +55,20 @@ var addRepoCmd = &cobra.Command{
 		repoUrl := args[1]
 		err := repositories.AddRepository(name, repoUrl, "master")
 		if err != nil {
-			if !errors.Is(err, errors2.RepositoryAlreadyExistsError) {
-				PrintError("unable to add repository: %s", err)
-			} else {
-				PrintSuccess("Repository already configured!")
-				os.Exit(0)
+			if err.Error() == "authentication required" {
+				user, pw, err := RunAuthDialog()
+				if err != nil {
+					PrintError("unable to display authentication dialog: %s", err)
+				}
+				err = repositories.AddAuthRepository(name, repoUrl, user, pw, "master")
+				if err != nil {
+					if !errors.Is(err, errors2.RepositoryAlreadyExistsError) {
+						PrintError("unable to add repository: %s", err)
+					} else {
+						PrintSuccess("Repository already configured!")
+						os.Exit(0)
+					}
+				}
 			}
 		}
 		PrintSuccess("Successfully added repository!")

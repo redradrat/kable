@@ -12,5 +12,6 @@ var (
 	ConceptTypeUnsupportedError   = errors.New("given concept type is not supported")
 	RenderTargetUnsupportedError  = errors.New("desired render target is not supported")
 	InvalidConceptIdentifierError = errors.New("given concept identifier is invalid")
+	ConceptDirInvalidError        = errors.New("directory is not a concept directory")
 	InvalidRenderNameError        = errors.New("given app name is invalid (only allowed: 'a-z', '-', '_')")
 )

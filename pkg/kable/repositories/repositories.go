@@ -7,6 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
+
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
 	"github.com/redradrat/kable/pkg/kable/config"
 
 	errors2 "github.com/redradrat/kable/pkg/kable/errors"
@@ -62,10 +66,14 @@ func NewRepoCache() RepoCache {
 }
 
 type RepoCacheEntry struct {
-	Path        string
+	RepoDirPath string
 	Branch      string
 	URI         string
 	SoftDeleted bool
+}
+
+func (rce RepoCacheEntry) AbsolutePath() string {
+	return filepath.Join(config.RepoDir, rce.RepoDirPath)
 }
 
 func writeCacheIndex(ci RepoCache) error {
@@ -120,7 +128,7 @@ func readCacheIndex() (RepoCache, error) {
 	return index, nil
 }
 
-func AddToCacheIndex(id string, url, path, branch string) error {
+func AddToCacheIndex(id string, url, branch string) error {
 	cache, err := readCacheIndex()
 
 	// If we get an "IsNotExist"-error here, we just assume we're initializing
@@ -129,9 +137,9 @@ func AddToCacheIndex(id string, url, path, branch string) error {
 	}
 
 	cache.Index[id] = RepoCacheEntry{
-		Branch: branch,
-		Path:   path,
-		URI:    url,
+		Branch:      branch,
+		RepoDirPath: id,
+		URI:         url,
 	}
 
 	if err := writeCacheIndex(cache); err != nil {
@@ -267,6 +275,10 @@ func TidyRepositories() error {
 }
 
 func AddRepository(id, url, branch string) error {
+	return AddAuthRepository(id, url, "", "", branch)
+}
+
+func AddAuthRepository(id, url, user, pass, branch string) error {
 	idx, err := readCacheIndex()
 	if err != nil {
 		return err
@@ -291,7 +303,7 @@ func AddRepository(id, url, branch string) error {
 	}
 
 	// If cachedId is nil, we need to clone.
-	if err := cloneRepo(id, url, branch); err != nil {
+	if err := cloneRepo(id, url, user, pass, branch); err != nil {
 		return err
 	}
 
@@ -308,15 +320,12 @@ func UpdateRepositories() error {
 		return err
 	}
 
-	for id, ref := range idx.Index {
+	for id, _ := range idx.Index {
 		if !IsInitialized(id) {
-			if err := cloneRepo(id, ref.URI, ref.Branch); err != nil {
-				return err
-			}
 			continue
 		}
 
-		repo, err := git.PlainOpen(MustGetCacheInfo(id).Path)
+		repo, err := git.PlainOpen(MustGetCacheInfo(id).AbsolutePath())
 		if err != nil {
 			return err
 		}
@@ -336,11 +345,20 @@ func UpdateRepositories() error {
 	return nil
 }
 
-func cloneRepo(name, url, branch string) error {
+func cloneRepo(name, url, user, pass, branch string) error {
 	repopath := filepath.Join(config.RepoDir, name)
 	refName := plumbing.NewBranchReferenceName(branch)
+	var auth transport.AuthMethod
+	if user != "" && pass != "" {
+		auth = &http.BasicAuth{
+			Username: user,
+			Password: pass,
+		}
+	}
+
 	err := clone(ClonerConfig{
 		CloneOptions: git.CloneOptions{
+			Auth:          auth,
 			URL:           url,
 			ReferenceName: refName,
 			SingleBranch:  true,
@@ -376,7 +394,7 @@ func cloneRepo(name, url, branch string) error {
 	}
 
 	// After a successful clone, we need to add the repo to the cache index.
-	if err := AddToCacheIndex(name, url, repopath, branch); err != nil {
+	if err := AddToCacheIndex(name, url, branch); err != nil {
 		return err
 	}
 
@@ -405,7 +423,7 @@ func GetRepoIndex(repoid string) (RepoIndex, error) {
 	}
 
 	// Read in the file
-	content, err := ioutil.ReadFile(filepath.Join(cacheInfo.Path, RepoIndexFilename))
+	content, err := ioutil.ReadFile(filepath.Join(cacheInfo.AbsolutePath(), RepoIndexFilename))
 	if err != nil {
 		return index, err
 	}

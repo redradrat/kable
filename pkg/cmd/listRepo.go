@@ -16,6 +16,8 @@ limitations under the License.
 package cmd
 
 import (
+	"strconv"
+
 	"github.com/redradrat/kable/pkg/kable/repositories"
 	"github.com/spf13/cobra"
 )
@@ -30,12 +32,12 @@ var listReposCmd = &cobra.Command{
 			PrintError("cannot list repositories: %s \n", err)
 		}
 
-		var repoSlices [][]interface{}
+		var repoSlices [][]string
 		for id, uri := range repoMap {
 			if repositories.IsInitialized(id) {
-				repoSlices = append(repoSlices, []interface{}{id, uri, true})
+				repoSlices = append(repoSlices, []string{id, uri, strconv.FormatBool(true)})
 			} else {
-				repoSlices = append(repoSlices, []interface{}{id, uri, false})
+				repoSlices = append(repoSlices, []string{id, uri, strconv.FormatBool(false)})
 			}
 		}
 

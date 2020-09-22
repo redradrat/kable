@@ -29,9 +29,9 @@ var listConceptsCmd = &cobra.Command{
 		if err != nil {
 			PrintError("unable to list concepts: %s", err)
 		}
-		var outList [][]interface{}
+		var outList [][]string
 		for _, pair := range concepts {
-			outList = append(outList, []interface{}{
+			outList = append(outList, []string{
 				pair.Path,
 				pair.RepoId,
 				pair.Concept.Meta.Maintainer.String(),

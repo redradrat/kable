@@ -5,33 +5,15 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/rodaine/table"
+	"github.com/olekukonko/tablewriter"
 )
 
-func PrintTable(headers []string, lines ...[]interface{}) {
-	var tbl table.Table
-	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
-	columnFmt := color.New(color.FgYellow).SprintfFunc()
-
-	// Compile Headings for writer
-	expHeaders := make([]interface{}, len(headers))
-	for i, header := range headers {
-		expHeaders[i] = header
-	}
-
-	tbl = table.New(expHeaders...).WithPadding(2)
-	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
-
-	for _, line := range lines {
-		expLine := make([]interface{}, len(line))
-		// Compile interface slice
-		for i, entry := range line {
-			expLine[i] = entry
-		}
-		tbl.AddRow(expLine...)
-	}
-
-	tbl.Print()
+func PrintTable(headers []string, lines ...[]string) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(headers)
+	table.SetBorder(false)  // Set Border to false
+	table.AppendBulk(lines) // Add Bulk Data
+	table.Render()
 }
 
 func PrintError(format string, a ...interface{}) {

@@ -11,5 +11,4 @@ func clone(cloner ClonerConfig) error {
 	}
 	out.Config()
 	return nil
-
 }

@@ -51,7 +51,7 @@ var initConceptCmd = &cobra.Command{
 }
 
 func init() {
-	conceptCmd.AddCommand(initConceptCmd)
+	devCmd.AddCommand(initConceptCmd)
 
 	// Here you will define your flags and configuration settings.
 

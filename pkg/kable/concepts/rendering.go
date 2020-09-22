@@ -1,6 +1,10 @@
 package concepts
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -15,11 +19,49 @@ const (
 
 var RenderNameIsValid = regexp.MustCompile(RenderNameRegexString).MatchString
 
-// ConceptRenderV1 defines model for ConceptRenderV1.
-type ConceptRenderV1 struct {
+type File struct {
+	path    string
+	content []byte
+}
+
+type Render struct {
+	Info  File
+	Files []File
+}
+
+func (f File) String() string {
+	return string(f.content)
+}
+
+func (b Render) Write(baseDir string) error {
+	writeFile := func(file File) error {
+		path := filepath.Join(baseDir, file.path)
+		if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+			return err
+		}
+		if err := ioutil.WriteFile(path, file.content, 0666); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	for _, file := range b.Files {
+		if err := writeFile(file); err != nil {
+			return err
+		}
+	}
+	if err := writeFile(b.Info); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RenderInfoV1 defines model for RenderInfoV1.
+type RenderInfoV1 struct {
 	Version  int            `json:"version"`
 	Meta     RenderMeta     `json:"meta"`
-	Origin   *ConceptOrigin `json:"origin"`
+	Origin   *ConceptOrigin `json:"origin,omitempty"`
 	Values   *RenderValues  `json:"values,omitempty"`
 	FileTree []string       `json:"files,omitempty"`
 }
@@ -55,42 +97,79 @@ func (vt SelectValueType) String() string {
 
 // RenderMeta defines model for RenderMeta.
 type RenderMeta struct {
-	Name        string `json:"name"`
 	DateCreated string `json:"date"`
 }
 
-func NewRenderV1(name string, avs *RenderValues) (*ConceptRenderV1, error) {
-	if !RenderNameIsValid(name) {
-		return nil, errors.InvalidRenderNameError
-	}
-
-	app := ConceptRenderV1{
+func NewRenderV1(avs *RenderValues, origin *ConceptOrigin) (*RenderInfoV1, error) {
+	render := RenderInfoV1{
 		Version: 1,
 		Meta: RenderMeta{
-			Name:        name,
 			DateCreated: time.Now().Format(time.RFC822),
 		},
+		Origin: origin,
 	}
-	app.Values = avs
+	render.Values = avs
 
-	return &app, nil
+	return &render, nil
 }
 
-func RenderConcept(cr *ConceptRenderV1, ci ConceptIdentifier, output string, ttype TargetType) (*Bundle, error) {
-	var err error
+func RenderConcept(path string, avs *RenderValues, ttype TargetType) (*Render, error) {
+	return renderConcept(path, nil, avs, ttype)
+}
 
+func renderConcept(path string, origin *ConceptOrigin, avs *RenderValues, ttype TargetType) (*Render, error) {
 	var target Target
 	switch ttype {
 	case YamlTargetType:
 		target = YamlTarget{}
 	case CRDTargetType:
 		target = CRDTarget{}
+	default:
+		return nil, errors.RenderTargetUnsupportedError
 	}
 
-	cr.Origin, err = GetConceptOrigin(ci)
+	cpt, err := GetConcept(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return target.RenderBundle(cr, ci, output)
+	render, err := target.Render(path, avs, cpt.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	cr, err := NewRenderV1(avs, origin)
+	if err != nil {
+		return nil, err
+	}
+
+	appFile, err := json.MarshalIndent(cr, "", "	")
+	if err != nil {
+		return nil, err
+	}
+
+	render.Info = File{
+		path:    ConceptRenderFileName,
+		content: appFile,
+	}
+
+	return render, nil
+}
+
+func RenderRepoConcept(avs *RenderValues, ci ConceptIdentifier, ttype TargetType) (*Render, error) {
+	// As the initialization check has been done via GetRepoConcept
+	conceptPath, err := GetRepoConceptPath(ci)
+	if err != nil {
+		return nil, err
+	}
+
+	// Compile ConceptRender File
+	origin, err := GetConceptOrigin(ci)
+	if err != nil {
+		return nil, err
+	}
+
+	render, err := renderConcept(conceptPath, origin, avs, ttype)
+
+	return render, nil
 }
