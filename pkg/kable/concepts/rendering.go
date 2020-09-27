@@ -13,6 +13,7 @@ import (
 
 const (
 	RenderStringValueTypeIdentifier ValueTypeIdentifier = "string"
+	RenderMapValueTypeIdentifier    ValueTypeIdentifier = "map"
 	RenderSelectValueTypeIdentifier ValueTypeIdentifier = "select"
 	RenderNameRegexString                               = "^[a-z-_]+$"
 )
@@ -74,6 +75,17 @@ type ValueType interface {
 }
 
 type RenderValues map[string]ValueType
+
+type MapValueType map[string]string
+
+func (vt MapValueType) ValueTypeIdentifier() string {
+	return string(RenderMapValueTypeIdentifier)
+}
+
+func (vt MapValueType) String() string {
+	outstring, _ := json.Marshal(map[string]string(vt))
+	return string(outstring)
+}
 
 type StringValueType string
 

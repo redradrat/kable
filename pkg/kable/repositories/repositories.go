@@ -20,11 +20,18 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 
 	"github.com/go-git/go-git/v5"
+
+	"github.com/99designs/keyring"
 )
 
 const (
 	RepoIndexFilename = "kable.json"
+	KableKeychainId   = "kablerepos"
 )
+
+var kableKeyringConfig = keyring.Config{
+	ServiceName: "kable",
+}
 
 type RepoIndex struct {
 	Version        int      `json:"version"`
@@ -307,6 +314,26 @@ func AddAuthRepository(id, url, user, pass, branch string) error {
 		return err
 	}
 
+	ring, err := keyring.Open(kableKeyringConfig)
+	if err != nil {
+		return err
+	}
+
+	// store credentials in local keyring
+	err = ring.Set(keyring.Item{
+		Key:   id + "-user",
+		Data:  []byte(user),
+		Label: "kable",
+	})
+	err = ring.Set(keyring.Item{
+		Key:   id + "-pass",
+		Data:  []byte(pass),
+		Label: "kable",
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -336,10 +363,34 @@ func UpdateRepositories() error {
 		if err := wt.Pull(&git.PullOptions{
 			SingleBranch: true,
 		}); err != nil {
-			if err == git.NoErrAlreadyUpToDate {
-				continue
+			if err.Error() == "authentication required" {
+				// try to get auth from keychain
+				ring, err := keyring.Open(kableKeyringConfig)
+				if err != nil {
+					return err
+				}
+				user, err := ring.Get(id + "-user")
+				if err != nil {
+					return err
+				}
+				pass, err := ring.Get(id + "-pass")
+				if err != nil {
+					return err
+				}
+				err = wt.Pull(&git.PullOptions{
+					SingleBranch: true,
+					Auth: &http.BasicAuth{
+						Username: string(user.Data),
+						Password: string(pass.Data),
+					},
+				})
+				if err != nil {
+					if err == git.NoErrAlreadyUpToDate {
+						continue
+					}
+					return err
+				}
 			}
-			return err
 		}
 	}
 	return nil

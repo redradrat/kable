@@ -1,8 +1,22 @@
+# github.com/99designs/keyring v1.1.6
+## explicit
+github.com/99designs/keyring
 # github.com/AlecAivazis/survey/v2 v2.1.1
 ## explicit
 github.com/AlecAivazis/survey/v2
 github.com/AlecAivazis/survey/v2/core
 github.com/AlecAivazis/survey/v2/terminal
+# github.com/danieljoos/wincred v1.0.2
+github.com/danieljoos/wincred
+# github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b
+github.com/dvsekhvalnov/jose2go
+github.com/dvsekhvalnov/jose2go/aes
+github.com/dvsekhvalnov/jose2go/arrays
+github.com/dvsekhvalnov/jose2go/base64url
+github.com/dvsekhvalnov/jose2go/compact
+github.com/dvsekhvalnov/jose2go/kdf
+github.com/dvsekhvalnov/jose2go/keys/ecc
+github.com/dvsekhvalnov/jose2go/padding
 # github.com/emirpasic/gods v1.12.0
 github.com/emirpasic/gods/containers
 github.com/emirpasic/gods/lists
@@ -73,6 +87,8 @@ github.com/go-git/go-git/v5/utils/merkletrie/internal/frame
 github.com/go-git/go-git/v5/utils/merkletrie/noder
 # github.com/go-logr/logr v0.2.0
 github.com/go-logr/logr
+# github.com/godbus/dbus v4.1.0+incompatible
+github.com/godbus/dbus
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
@@ -89,6 +105,8 @@ github.com/google/gofuzz
 # github.com/google/uuid v1.1.1
 ## explicit
 github.com/google/uuid
+# github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c
+github.com/gsterjov/go-libsecret
 # github.com/imdario/mergo v0.3.9
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
@@ -101,6 +119,8 @@ github.com/json-iterator/go
 github.com/kballard/go-shellquote
 # github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd
 github.com/kevinburke/ssh_config
+# github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d
+github.com/keybase/go-keychain
 # github.com/labstack/echo/v4 v4.1.16
 ## explicit
 github.com/labstack/echo/v4
@@ -125,6 +145,8 @@ github.com/mitchellh/go-homedir
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+# github.com/mtibben/percent v0.2.1
+github.com/mtibben/percent
 # github.com/olekukonko/tablewriter v0.0.4
 ## explicit
 github.com/olekukonko/tablewriter
@@ -146,6 +168,8 @@ github.com/valyala/fasttemplate
 github.com/whilp/git-urls
 # github.com/xanzy/ssh-agent v0.2.1
 github.com/xanzy/ssh-agent
+# github.com/zalando/go-keyring v0.1.0
+## explicit
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert

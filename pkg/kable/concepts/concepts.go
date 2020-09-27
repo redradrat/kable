@@ -23,6 +23,7 @@ const (
 	ConceptIdentifierRegex                        = "^([a-z/]+)@([a-z]+)$"
 	ConceptStringInputType    InputTypeIdentifier = "string"
 	ConceptSelectionInputType InputTypeIdentifier = "select"
+	ConceptMapInputType       InputTypeIdentifier = "map"
 	ConceptJsonnetType        ConceptType         = "jsonnet"
 	ConceptJsonnetfile                            = "jsonnetfile.json"
 	ConceptMainJsonnet                            = "main.jsonnet"

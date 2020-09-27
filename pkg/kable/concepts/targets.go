@@ -76,7 +76,16 @@ func renderJsonnetConcept(path string, avs *RenderValues) ([]File, error) {
 
 	if avs != nil {
 		for id, val := range *avs {
-			vm.ExtVar(id, val.String())
+			switch val.(type) {
+			case MapValueType:
+				vm.ExtCode(id, val.String())
+			case StringValueType:
+				vm.ExtVar(id, val.String())
+			case SelectValueType:
+				vm.ExtVar(id, val.String())
+			default:
+				return nil, errors.ValueTypeNotSupported
+			}
 		}
 	}
 

@@ -3,6 +3,7 @@ module github.com/redradrat/kable/pkg
 go 1.14
 
 require (
+	github.com/99designs/keyring v1.1.6
 	github.com/AlecAivazis/survey/v2 v2.1.1
 	github.com/fatih/color v1.9.0
 	github.com/ghodss/yaml v1.0.0
@@ -17,6 +18,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/whilp/git-urls v1.0.0
+	github.com/zalando/go-keyring v0.1.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	k8s.io/apimachinery v0.19.2
 )

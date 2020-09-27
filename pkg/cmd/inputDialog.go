@@ -1,8 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-
 	"github.com/AlecAivazis/survey/v2"
 
 	"github.com/redradrat/kable/pkg/kable/concepts"
@@ -70,6 +71,21 @@ func getValue(name string, input concepts.InputType) (concepts.ValueType, error)
 		}
 
 		value = concepts.SelectValueType(val)
+	case concepts.ConceptMapInputType:
+
+		val := ""
+		prompt := &survey.Input{
+			Message: name,
+		}
+		if err := survey.AskOne(prompt, &val); err != nil {
+			return nil, err
+		}
+
+		outmap := map[string]string{}
+		if err := json.Unmarshal([]byte(val), &outmap); err != nil {
+			return nil, errors.New(fmt.Sprintf("unable to parse given map input: %s", err.Error()))
+		}
+		value = concepts.MapValueType(outmap)
 	default:
 		return nil, fmt.Errorf("input type not supported")
 	}
