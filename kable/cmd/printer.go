@@ -10,6 +10,7 @@ import (
 
 func PrintTable(headers []string, lines ...[]string) {
 	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAutoWrapText(false)
 	table.SetHeader(headers)
 	table.SetBorder(false)  // Set Border to false
 	table.AppendBulk(lines) // Add Bulk Data
