@@ -18,7 +18,7 @@ package cmd
 import (
 	"strconv"
 
-	"github.com/redradrat/kable/pkg/kable/repositories"
+	"github.com/redradrat/kable/pkg/repositories"
 	"github.com/spf13/cobra"
 )
 

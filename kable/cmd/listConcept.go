@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	concepts2 "github.com/redradrat/kable/pkg/kable/concepts"
+	concepts2 "github.com/redradrat/kable/pkg/concepts"
 	"github.com/spf13/cobra"
 )
 

@@ -33,3 +33,21 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+brews:
+  - name: kable
+
+    tap:
+      owner: redradrat
+      name: homebrew-kable
+
+    commit_author:
+      name: Ralph Kühnert
+      email: kuehnert.ralph@gmail.com
+
+    homepage: "https://github.com/redradrat/kable"
+    description: "Manage kubernetes resource. GitOps galore!"
+
+    dependencies:
+      - name: git
+      - name: go-jsonnet
+      - name: jsonnet-bundler
