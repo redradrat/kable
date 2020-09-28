@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/redradrat/kable/pkg/api"
+	"github.com/redradrat/kable/kable/api"
 	"github.com/spf13/cobra"
 )
 

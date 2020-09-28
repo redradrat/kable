@@ -19,7 +19,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/redradrat/kable/pkg/repositories"
+	"github.com/redradrat/kable/kable/repositories"
 
 	"github.com/spf13/cobra"
 )

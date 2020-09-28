@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/redradrat/kable/pkg/errors"
+	"github.com/redradrat/kable/kable/errors"
 
 	"github.com/google/go-jsonnet"
 )

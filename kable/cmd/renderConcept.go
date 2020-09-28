@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redradrat/kable/pkg/concepts"
+	"github.com/redradrat/kable/kable/concepts"
 
 	"github.com/spf13/cobra"
 )

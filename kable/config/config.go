@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redradrat/kable/pkg/errors"
+	"github.com/redradrat/kable/kable/errors"
 
 	"github.com/mitchellh/go-homedir"
 )

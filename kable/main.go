@@ -6,7 +6,7 @@
 package main
 
 import (
-	"github.com/redradrat/kable/pkg/cmd"
+	"github.com/redradrat/kable/kable/cmd"
 )
 
 func main() {

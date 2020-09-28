@@ -1,4 +1,4 @@
-module github.com/redradrat/kable/pkg
+module github.com/redradrat/kable/kable
 
 go 1.14
 

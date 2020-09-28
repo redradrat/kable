@@ -21,9 +21,9 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/redradrat/kable/pkg/repositories"
+	"github.com/redradrat/kable/kable/repositories"
 
-	errors2 "github.com/redradrat/kable/pkg/errors"
+	errors2 "github.com/redradrat/kable/kable/errors"
 
 	"github.com/spf13/cobra"
 )

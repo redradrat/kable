@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 
-	"github.com/redradrat/kable/pkg/config"
+	"github.com/redradrat/kable/kable/config"
 
-	errors2 "github.com/redradrat/kable/pkg/errors"
+	errors2 "github.com/redradrat/kable/kable/errors"
 
 	"github.com/google/uuid"
 

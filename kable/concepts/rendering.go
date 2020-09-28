@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/redradrat/kable/pkg/errors"
+	"github.com/redradrat/kable/kable/errors"
 )
 
 const (

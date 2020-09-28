@@ -18,7 +18,7 @@ vet:
 	go vet ./...
 
 build:
-	go build -ldflags="-X github.com/redradrat/kable/pkg/cmd.cliVersion=$(CLI_VERSION) -X github.com/redradrat/kable/pkg/cmd.cliDate=$(CLI_DATE)" -o ${BINTARGET}
+	go build -ldflags="-X github.com/redradrat/kable/kable/cmd.cliVersion=$(CLI_VERSION) -X github.com/redradrat/kable/kable/cmd.cliDate=$(CLI_DATE)" -o ${BINTARGET}
 	chmod +x ${BINTARGET}
 
 license:
