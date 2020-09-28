@@ -8,7 +8,7 @@ cli:
   project: https://github.com/redradrat/kable.git
 analyze:
   modules:
-  - name: github.com/redradrat/kable/pkg
+  - name: github.com/redradrat/kable/kable
     type: go
-    target: github.com/redradrat/kable/pkg
+    target: github.com/redradrat/kable/kable
     path: .

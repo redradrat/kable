@@ -12,7 +12,7 @@ ignored:
     - golang.org/x/**/*
 
 apps:
-  - source_path: 'pkg'
+  - source_path: 'kable'
     sources:
       go:
         mod: vendor

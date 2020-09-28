@@ -14,8 +14,8 @@ builds:
       - windows
       - darwin
     ldflags:
-    - -X github.com/redradrat/kable/pkg/cmd.cliVersion={{.Version}}
-    - -X github.com/redradrat/kable/pkg/cmd.cliDate={{.Date}}
+    - -X github.com/redradrat/kable/kable/cmd.cliVersion={{.Version}}
+    - -X github.com/redradrat/kable/kable/cmd.cliDate={{.Date}}
 archives:
   - replacements:
       darwin: Darwin
