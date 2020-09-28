@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/redradrat/kable/pkg/kable/errors"
@@ -14,7 +15,8 @@ import (
 const (
 	RenderStringValueTypeIdentifier ValueTypeIdentifier = "string"
 	RenderMapValueTypeIdentifier    ValueTypeIdentifier = "map"
-	RenderSelectValueTypeIdentifier ValueTypeIdentifier = "select"
+	RenderIntValueTypeIdentifier    ValueTypeIdentifier = "int"
+	RenderBoolValueTypeIdentifier   ValueTypeIdentifier = "bool"
 	RenderNameRegexString                               = "^[a-z-_]+$"
 )
 
@@ -67,6 +69,48 @@ type RenderInfoV1 struct {
 	FileTree []string       `json:"files,omitempty"`
 }
 
+func (ri *RenderInfoV1) Unmarshal(data []byte) error {
+	inter := struct {
+		Values map[string]interface{} `json:"values,omitempty"`
+	}{}
+	if err := json.Unmarshal(data, &inter); err != nil {
+		return err
+	}
+
+	newvals := RenderValues{}
+	for k, v := range inter.Values {
+		switch assertedValue := v.(type) {
+		case string:
+			newvals[k] = StringValueType(assertedValue)
+		case map[string]interface{}:
+			newvals[k] = MapValueType(assertedValue)
+		case int:
+			newvals[k] = IntValueType(assertedValue)
+		case bool:
+			newvals[k] = BoolValueType(assertedValue)
+		}
+	}
+
+	_ = json.Unmarshal(data, ri)
+	ri.Values = &newvals
+
+	return nil
+}
+
+func ParseRenderInfoV1FromFile(path string) (*RenderInfoV1, error) {
+	f, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	ri := &RenderInfoV1{}
+	if err := ri.Unmarshal(f); err != nil {
+		return nil, err
+	}
+
+	return ri, nil
+}
+
 type ValueTypeIdentifier string
 
 type ValueType interface {
@@ -76,14 +120,18 @@ type ValueType interface {
 
 type RenderValues map[string]ValueType
 
-type MapValueType map[string]string
+func (rv RenderValues) Map() map[string]ValueType {
+	return map[string]ValueType(rv)
+}
+
+type MapValueType map[string]interface{}
 
 func (vt MapValueType) ValueTypeIdentifier() string {
 	return string(RenderMapValueTypeIdentifier)
 }
 
 func (vt MapValueType) String() string {
-	outstring, _ := json.Marshal(map[string]string(vt))
+	outstring, _ := json.Marshal(map[string]interface{}(vt))
 	return string(outstring)
 }
 
@@ -97,14 +145,29 @@ func (vt StringValueType) String() string {
 	return string(vt)
 }
 
-type SelectValueType string
+type IntValueType int
 
-func (vt SelectValueType) ValueTypeIdentifier() string {
-	return string(RenderSelectValueTypeIdentifier)
+func (vt IntValueType) ValueTypeIdentifier() string {
+	return string(RenderIntValueTypeIdentifier)
 }
 
-func (vt SelectValueType) String() string {
-	return string(vt)
+func (vt IntValueType) String() string {
+
+	return strconv.Itoa(int(vt))
+}
+
+type BoolValueType bool
+
+func (vt BoolValueType) ValueTypeIdentifier() string {
+	return string(RenderBoolValueTypeIdentifier)
+}
+
+func (vt BoolValueType) String() string {
+	if vt == false {
+		return "false"
+	} else {
+		return "true"
+	}
 }
 
 // RenderMeta defines model for RenderMeta.
@@ -168,7 +231,7 @@ func renderConcept(path string, origin *ConceptOrigin, avs *RenderValues, ttype 
 	return render, nil
 }
 
-func RenderRepoConcept(avs *RenderValues, ci ConceptIdentifier, ttype TargetType) (*Render, error) {
+func RenderRepoConcept(ci ConceptIdentifier, avs *RenderValues, ttype TargetType) (*Render, error) {
 	// As the initialization check has been done via GetRepoConcept
 	conceptPath, err := GetRepoConceptPath(ci)
 	if err != nil {

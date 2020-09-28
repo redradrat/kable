@@ -42,7 +42,7 @@ var listConceptsCmd = &cobra.Command{
 }
 
 func init() {
-	conceptCmd.AddCommand(listConceptsCmd)
+	rootCmd.AddCommand(listConceptsCmd)
 
 	// Here you will define your flags and configuration settings.
 

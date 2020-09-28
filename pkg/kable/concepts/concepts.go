@@ -24,10 +24,13 @@ const (
 	ConceptStringInputType    InputTypeIdentifier = "string"
 	ConceptSelectionInputType InputTypeIdentifier = "select"
 	ConceptMapInputType       InputTypeIdentifier = "map"
+	ConceptIntInputType       InputTypeIdentifier = "int"
+	ConceptBoolInputType      InputTypeIdentifier = "bool"
 	ConceptJsonnetType        ConceptType         = "jsonnet"
 	ConceptJsonnetfile                            = "jsonnetfile.json"
 	ConceptMainJsonnet                            = "main.jsonnet"
 	ConceptMakefile                               = "Makefile"
+	ConceptGitignorefile                          = ".gitignore"
 	ConceptLibDir                                 = "lib/"
 	ConceptVendorDir                              = "vendor/"
 	ConceptKlibsonnet                             = "k.libsonnet"
@@ -96,10 +99,12 @@ local grafanaDeploy(name) = deployment.new(
 }
 `)
 	JsonnetMakeFile = []byte(`render:
-	kable dev render .
+	kable render -l . -o out/
 
 install:
 	jb install
+`)
+	JsonnetGitignoreFile = []byte(`out/
 `)
 )
 
@@ -205,7 +210,6 @@ func GetConcept(path string) (*Concept, error) {
 		return nil, err
 	}
 	return &concept, nil
-
 }
 
 // Origin defines the git source of origin
@@ -337,6 +341,9 @@ func InitConcept(name string, conceptType ConceptType) error {
 			return err
 		}
 		if err := createFile(JsonnetMakeFile, ConceptMakefile); err != nil {
+			return err
+		}
+		if err := createFile(JsonnetGitignoreFile, ConceptGitignorefile); err != nil {
 			return err
 		}
 		if err := os.MkdirAll(ConceptLibDir, os.ModePerm); err != nil {

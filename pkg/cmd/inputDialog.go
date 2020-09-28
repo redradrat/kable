@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/fatih/color"
+
 	"github.com/AlecAivazis/survey/v2"
 
 	"github.com/redradrat/kable/pkg/kable/concepts"
@@ -52,13 +55,35 @@ func getValue(name string, input concepts.InputType) (concepts.ValueType, error)
 
 		val := ""
 		prompt := &survey.Input{
-			Message: name,
+			Message: name + color.CyanString(" (string)"),
+			Help:    "example: test",
 		}
 		if err := survey.AskOne(prompt, &val); err != nil {
 			return nil, err
 		}
 
 		value = concepts.StringValueType(val)
+	case concepts.ConceptIntInputType:
+		var val int
+		prompt := &survey.Input{
+			Message: name + color.CyanString(" (integer)"),
+			Help:    "example: 3",
+		}
+		if err := survey.AskOne(prompt, &val); err != nil {
+			return nil, err
+		}
+
+		value = concepts.IntValueType(val)
+	case concepts.ConceptBoolInputType:
+		var val bool
+		prompt := &survey.Confirm{
+			Message: name + color.CyanString(" (boolean)"),
+		}
+		if err := survey.AskOne(prompt, &val); err != nil {
+			return nil, err
+		}
+
+		value = concepts.BoolValueType(val)
 	case concepts.ConceptSelectionInputType:
 
 		val := ""
@@ -70,18 +95,19 @@ func getValue(name string, input concepts.InputType) (concepts.ValueType, error)
 			return nil, err
 		}
 
-		value = concepts.SelectValueType(val)
+		value = concepts.StringValueType(val)
 	case concepts.ConceptMapInputType:
 
 		val := ""
 		prompt := &survey.Input{
-			Message: name,
+			Message: name + color.CyanString(" (map)"),
+			Help:    "example: {'foo':'bar'}",
 		}
 		if err := survey.AskOne(prompt, &val); err != nil {
 			return nil, err
 		}
 
-		outmap := map[string]string{}
+		outmap := map[string]interface{}{}
 		if err := json.Unmarshal([]byte(val), &outmap); err != nil {
 			return nil, errors.New(fmt.Sprintf("unable to parse given map input: %s", err.Error()))
 		}

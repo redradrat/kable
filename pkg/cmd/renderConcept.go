@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 
 	"github.com/redradrat/kable/pkg/kable/concepts"
 
@@ -25,19 +27,34 @@ import (
 
 var outpath string
 var conceptRenderTargetType string
+var local bool
 
 // renderConceptCmd represents the create command
 var renderConceptCmd = &cobra.Command{
-	Use:   "render [CONCEPT@REPO]",
-	Short: "RenderMeta a given concept",
+	Use:   "render [PATH]",
+	Short: "Render a concept",
+	Example: `
+kable render my/concept@myrepo
+kable render -l . -o out/
+`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return errors.New("requires exactly ONE arguments")
+			return errors.New("requires exactly ONE argument")
 		}
-		conceptIdentifier := args[0]
 
-		if !concepts.IsValidConceptIdentifier(conceptIdentifier) {
-			PrintError("invalid concept identifier given: %s", conceptIdentifier)
+		conceptIdentifier := args[0]
+		if local {
+			f, err := os.Stat(conceptIdentifier)
+			if os.IsNotExist(err) {
+				PrintError("given path does not exist")
+			}
+			if !f.IsDir() {
+				PrintError("given path is not a directory")
+			}
+		} else {
+			if conceptIdentifier != "." || !concepts.IsValidConceptIdentifier(conceptIdentifier) {
+				PrintError("invalid concept identifier given: %s", conceptIdentifier)
+			}
 		}
 
 		return nil
@@ -45,25 +62,62 @@ var renderConceptCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		conceptIdentifier := concepts.ConceptIdentifier(args[0])
 
-		// First let's get our concept... maybe it doesn't even exist, hm? meow
-		PrintMsg("Fetching Concept '%s'...", conceptIdentifier.String())
-		cpt, err := concepts.GetRepoConcept(conceptIdentifier)
+		// If local let's get our concept from here, otherwise from the cache
+		var cpt *concepts.Concept
+		var err error
+		if !local {
+			// ... maybe it doesn't even exist, hm? meow
+			PrintMsg("Fetching Concept '%s'...", conceptIdentifier.String())
+			cpt, err = concepts.GetRepoConcept(conceptIdentifier)
+		} else {
+			cpt, err = concepts.GetConcept(conceptIdentifier.String())
+		}
 		if err != nil {
 			PrintError("unable to get specified concept: %s", err)
 		}
 
-		// Run dialog to get values for concept inputs
-		avs, err := NewInputDialog(cpt.Inputs).RunInputDialog()
+		// check if existing RenderInfo exists, or run dialog to get values for concept inputs
+		var avs *concepts.RenderValues
+		existingRenderInfo := true
+		outdatedValues := false
+		ri, err := concepts.ParseRenderInfoV1FromFile(filepath.Join(outpath, concepts.ConceptRenderFileName))
 		if err != nil {
-			PrintError("error processing concept inputs: %s", err)
+			if os.IsNotExist(err) {
+				existingRenderInfo = false
+			} else {
+				PrintError("error parsing existing renderinfo: %s", err)
+			}
+		} else {
+			vals := *ri.Values
+			for k, _ := range cpt.Inputs.Mandatory {
+				if _, ok := vals[k]; !ok {
+					outdatedValues = true
+				}
+			}
+			avs = &vals
+		}
+
+		// Ask for values if renderinfo does not exist or values are outdated
+		if !existingRenderInfo || outdatedValues {
+			PrintMsg("No existing render or outdated values detected...")
+			avs, err = NewInputDialog(cpt.Inputs).RunInputDialog()
+			if err != nil {
+				PrintError("error processing concept inputs: %s", err)
+			}
 		}
 
 		// Now let's render our app
 		PrintMsg("Rendering concept...")
-		bundle, err := concepts.RenderRepoConcept(avs, conceptIdentifier, concepts.TargetType(conceptRenderTargetType))
+		var bundle *concepts.Render
+		if !local {
+			bundle, err = concepts.RenderRepoConcept(conceptIdentifier, avs, concepts.TargetType(conceptRenderTargetType))
+		} else {
+			bundle, err = concepts.RenderConcept(conceptIdentifier.String(), avs, concepts.TargetType(conceptRenderTargetType))
+		}
 		if err != nil {
 			PrintError("unable to render concept: %s", err)
 		}
+
 		if err := bundle.Write(outpath); err != nil {
 			PrintError("unable to write rendered concept to file system: %s", err)
 		}
@@ -72,7 +126,7 @@ var renderConceptCmd = &cobra.Command{
 }
 
 func init() {
-	conceptCmd.AddCommand(renderConceptCmd)
+	rootCmd.AddCommand(renderConceptCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -83,5 +137,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	renderConceptCmd.Flags().StringVarP(&outpath, "output", "o", ".", "The output directory this app will be placed in")
+	renderConceptCmd.Flags().BoolVarP(&local, "local", "l", false, "Whether to read the concept from a local path")
 	renderConceptCmd.Flags().StringVarP(&conceptRenderTargetType, "targetType", "t", string(concepts.YamlTargetType), "The target format, this concept will be rendered as")
 }
