@@ -52,7 +52,7 @@ kable render -l . -o out/
 				PrintError("given path is not a directory")
 			}
 		} else {
-			if conceptIdentifier != "." || !concepts.IsValidConceptIdentifier(conceptIdentifier) {
+			if conceptIdentifier != "." && !concepts.IsValidConceptIdentifier(conceptIdentifier) {
 				PrintError("invalid concept identifier given: %s", conceptIdentifier)
 			}
 		}
