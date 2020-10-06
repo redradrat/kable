@@ -27,6 +27,11 @@ checksum:
   name_template: 'checksums.txt'
 snapshot:
   name_template: "{{ .Tag }}-next"
+
+env_files:
+  # use only one or release will fail!
+  github_token: ~/.tokens/goreleaser_github
+
 changelog:
   sort: asc
   filters:
