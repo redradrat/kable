@@ -25,7 +25,9 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
@@ -253,31 +255,46 @@ func builtinMakeArray(i *interpreter, trace traceElement, szv, funcv value) (val
 }
 
 func builtinFlatMap(i *interpreter, trace traceElement, funcv, arrv value) (value, error) {
-	arr, err := i.getArray(arrv, trace)
-	if err != nil {
-		return nil, err
-	}
 	fun, err := i.getFunction(funcv, trace)
 	if err != nil {
 		return nil, err
 	}
-	num := arr.length()
-	// Start with capacity of the original array.
-	// This may spare us a few reallocations.
-	// TODO(sbarzowski) verify that it actually helps
-	elems := make([]*cachedThunk, 0, num)
-	for counter := 0; counter < num; counter++ {
-		returnedValue, err := fun.call(i, trace, args(arr.elements[counter]))
-		if err != nil {
-			return nil, err
+	switch arrv := arrv.(type) {
+	case *valueArray:
+		num := arrv.length()
+		// Start with capacity of the original array.
+		// This may spare us a few reallocations.
+		// TODO(sbarzowski) verify that it actually helps
+		elems := make([]*cachedThunk, 0, num)
+		for counter := 0; counter < num; counter++ {
+			returnedValue, err := fun.call(i, trace, args(arrv.elements[counter]))
+			if err != nil {
+				return nil, err
+			}
+			returned, err := i.getArray(returnedValue, trace)
+			if err != nil {
+				return nil, err
+			}
+			elems = append(elems, returned.elements...)
 		}
-		returned, err := i.getArray(returnedValue, trace)
-		if err != nil {
-			return nil, err
+		return makeValueArray(elems), nil
+	case valueString:
+		var str strings.Builder
+		for _, elem := range arrv.getRunes() {
+			returnedValue, err := fun.call(i, trace, args(readyThunk(makeValueString(string(elem)))))
+			if err != nil {
+				return nil, err
+			}
+			returned, err := i.getString(returnedValue, trace)
+			if err != nil {
+				return nil, err
+			}
+			str.WriteString(returned.getGoString())
 		}
-		elems = append(elems, returned.elements...)
+		return makeValueString(str.String()), nil
+	default:
+		return nil, i.Error("std.flatMap second param must be array / string, got "+arrv.getType().name, trace)
 	}
-	return makeValueArray(elems), nil
 }
 
 func joinArrays(i *interpreter, trace traceElement, sep *valueArray, arr *valueArray) (value, error) {
@@ -844,7 +861,7 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	return float64(exponent)
 })
 
-func liftBitwise(f func(int64, int64) int64) func(*interpreter, traceElement, value, value) (value, error) {
+func liftBitwise(f func(int64, int64) int64, positiveRightArg bool) func(*interpreter, traceElement, value, value) (value, error) {
 	return func(i *interpreter, trace traceElement, xv, yv value) (value, error) {
 		x, err := i.getNumber(xv, trace)
 		if err != nil {
@@ -862,16 +879,18 @@ func liftBitwise(f func(int64, int64) int64) func(*interpreter, traceElement, va
 			msg := fmt.Sprintf("Bitwise operator argument %v outside of range [%v, %v]", y.value, int64(math.MinInt64), int64(math.MaxInt64))
 			return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
 		}
+		if positiveRightArg && y.value < 0 {
+			return nil, makeRuntimeError("Shift by negative exponent.", i.getCurrentStackTrace(trace))
+		}
 		return makeDoubleCheck(i, trace, float64(f(int64(x.value), int64(y.value))))
 	}
 }
 
-// TODO(sbarzowski) negative shifts
-var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y%64) })
-var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y%64) })
-var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y })
-var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y })
-var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y })
+var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y%64) }, true)
+var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y%64) }, true)
+var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y }, false)
+var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y }, false)
+var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y }, false)
 
 func builtinObjectFieldsEx(i *interpreter, trace traceElement, objv, includeHiddenV value) (value, error) {
 	obj, err := i.getObject(objv, trace)
@@ -1159,6 +1178,118 @@ func builtinParseJSON(i *interpreter, trace traceElement, str value) (value, err
 	return jsonToValue(i, trace, parsedJSON)
 }
 
+func jsonEncode(v interface{}) (string, error) {
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	err := enc.Encode(v)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimRight(buf.String(), "\n"), nil
+}
+
+// We have a very similar logic here /interpreter.go@v0.16.0#L695 and here: /interpreter.go@v0.16.0#L627
+// These should ideally be unified
+// For backwards compatibility reasons, we are manually marshalling to json so we can control formatting
+// In the future, it might be apt to use a library [pretty-printing] function
+func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value) (value, error) {
+	vindent, err := i.getString(indent, trace)
+	if err != nil {
+		return nil, err
+	}
+
+	sindent := vindent.getGoString()
+
+	var path []string
+
+	var aux func(ov value, path []string, cindent string) (string, error)
+	aux = func(ov value, path []string, cindent string) (string, error) {
+		if ov == nil {
+			fmt.Println("value is nil")
+			return "null", nil
+		}
+
+		switch v := ov.(type) {
+		case *valueNull:
+			return "null", nil
+		case valueString:
+			jStr, err := jsonEncode(v.getGoString())
+			if err != nil {
+				return "", i.Error(fmt.Sprintf("failed to marshal valueString to JSON: %v", err.Error()), trace)
+			}
+			return jStr, nil
+		case *valueNumber:
+			return strconv.FormatFloat(v.value, 'f', -1, 64), nil
+		case *valueBoolean:
+			return fmt.Sprintf("%t", v.value), nil
+		case *valueFunction:
+			return "", i.Error(fmt.Sprintf("tried to manifest function at %s", path), trace)
+		case *valueArray:
+			newIndent := cindent + sindent
+			lines := []string{"[\n"}
+
+			var arrayLines []string
+			for aI, cThunk := range v.elements {
+				cTv, err := cThunk.getValue(i, trace)
+				if err != nil {
+					return "", err
+				}
+
+				newPath := append(path, strconv.FormatInt(int64(aI), 10))
+				s, err := aux(cTv, newPath, newIndent)
+				if err != nil {
+					return "", err
+				}
+				arrayLines = append(arrayLines, newIndent+s)
+			}
+			lines = append(lines, strings.Join(arrayLines, ",\n"))
+			lines = append(lines, "\n"+cindent+"]")
+			return strings.Join(lines, ""), nil
+		case *valueObject:
+			newIndent := cindent + sindent
+			lines := []string{"{\n"}
+
+			fields := objectFields(v, withoutHidden)
+			sort.Strings(fields)
+			var objectLines []string
+			for _, fieldName := range fields {
+				fieldValue, err := v.index(i, trace, fieldName)
+				if err != nil {
+					return "", err
+				}
+
+				fieldNameMarshalled, err := jsonEncode(fieldName)
+				if err != nil {
+					return "", i.Error(fmt.Sprintf("failed to marshal object fieldname to JSON: %v", err.Error()), trace)
+				}
+
+				newPath := append(path, fieldName)
+				mvs, err := aux(fieldValue, newPath, newIndent)
+				if err != nil {
+					return "", err
+				}
+
+				line := newIndent + string(fieldNameMarshalled) + ": " + mvs
+				objectLines = append(objectLines, line)
+			}
+			lines = append(lines, strings.Join(objectLines, ",\n"))
+			lines = append(lines, "\n"+cindent+"}")
+			return strings.Join(lines, ""), nil
+		default:
+			return "", i.Error(fmt.Sprintf("unknown type to marshal to JSON: %s", reflect.TypeOf(v)), trace)
+		}
+	}
+
+	finalString, err := aux(obj, path, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueString(finalString), nil
+}
+
 func builtinExtVar(i *interpreter, trace traceElement, name value) (value, error) {
 	str, err := i.getString(name, trace)
 	if err != nil {
@@ -1441,8 +1572,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, params: ast.Identifiers{"obj", "hidden"}},
 	&ternaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, params: ast.Identifiers{"obj", "fname", "hidden"}},
 	&unaryBuiltin{name: "type", function: builtinType, params: ast.Identifiers{"x"}},
-	&unaryBuiltin{name: "char", function: builtinChar, params: ast.Identifiers{"x"}},
-	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "char", function: builtinChar, params: ast.Identifiers{"n"}},
+	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "ceil", function: builtinCeil, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "floor", function: builtinFloor, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sqrt", function: builtinSqrt, params: ast.Identifiers{"x"}},
@@ -1456,15 +1587,16 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "exp", function: builtinExp, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "mantissa", function: builtinMantissa, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "exponent", function: builtinExponent, params: ast.Identifiers{"x"}},
-	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"base", "exp"}},
+	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
-	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, params: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
+	&binaryBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: ast.Identifiers{"value", "indent"}},
 	&unaryBuiltin{name: "base64", function: builtinBase64, params: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},

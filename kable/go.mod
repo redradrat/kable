@@ -8,8 +8,9 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.1.0
-	github.com/google/go-jsonnet v0.16.0
+	github.com/google/go-jsonnet v0.16.1-0.20200908152747-b70cbd441a39
 	github.com/google/uuid v1.1.1
+	github.com/grafana/tanka v0.12.0
 	github.com/labstack/echo/v4 v4.1.16
 	github.com/manifoldco/promptui v0.7.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect

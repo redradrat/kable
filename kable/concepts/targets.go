@@ -1,17 +1,14 @@
 package concepts
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"path/filepath"
+	"fmt"
 
-	"github.com/ghodss/yaml"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/grafana/tanka/pkg/jsonnet"
+	"github.com/grafana/tanka/pkg/kubernetes/manifest"
+	"github.com/grafana/tanka/pkg/process"
+	"github.com/grafana/tanka/pkg/tanka"
 
 	"github.com/redradrat/kable/kable/errors"
-
-	"github.com/google/go-jsonnet"
 )
 
 const (
@@ -65,70 +62,50 @@ func (y YamlTarget) Render(path string, vals *RenderValues, cpt ConceptType) (*R
 func renderJsonnetConcept(path string, avs *RenderValues) ([]File, error) {
 	var bundle []File
 
-	vm := jsonnet.MakeVM()
-	vm.Importer(&jsonnet.FileImporter{
-		JPaths: []string{
-			filepath.Join(path),
-			filepath.Join(path, ConceptLibDir),
-			filepath.Join(path, ConceptVendorDir),
-		},
-	})
+	opts := tanka.Opts{}
 
 	if avs != nil {
+		if opts.ExtCode == nil {
+			opts.ExtCode = make(jsonnet.InjectedCode)
+		}
+		if opts.TLACode == nil {
+			opts.TLACode = make(jsonnet.InjectedCode)
+		}
 		for id, val := range *avs {
 			switch val.(type) {
 			case StringValueType:
-				vm.ExtVar(id, val.String())
+				opts.ExtCode[id] = fmt.Sprintf(`"%s"`, val.String())
+				opts.TLACode[id] = fmt.Sprintf(`"%s"`, val.String())
 			case MapValueType, IntValueType, BoolValueType:
-				vm.ExtCode(id, val.String())
+				opts.ExtCode[id] = val.String()
+				opts.TLACode[id] = val.String()
 			default:
 				return nil, errors.ValueTypeNotSupported
 			}
 		}
 	}
 
-	mainJsonnet, err := ioutil.ReadFile(filepath.Join(path, ConceptMainJsonnet))
+	raw, err := tanka.Eval(path, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonnetout, err := vm.EvaluateSnippet(ConceptMainJsonnet, string(mainJsonnet))
+	// Use Tanka's extract
+	extract, err := process.Extract(raw)
 	if err != nil {
 		return nil, err
 	}
-
-	var objs unstructured.UnstructuredList
-
-	// attempt to unmarshal either array or single object
-	var jsonObjs []unstructured.Unstructured
-	err = json.Unmarshal([]byte(jsonnetout), &jsonObjs)
-	if err == nil {
-		objs.Items = append(objs.Items, jsonObjs...)
-	} else {
-		var jsonObj unstructured.Unstructured
-		err = json.Unmarshal([]byte(jsonnetout), &jsonObj)
-		if err != nil {
-			return nil, err
-		}
-		objs.Items = append(objs.Items, jsonObj)
-	}
-
-	objs.SetAPIVersion("v1")
-	objs.SetKind("List")
-
-	jsonout, err := objs.MarshalJSON()
-	if err != nil {
+	if err := process.Unwrap(extract); err != nil {
 		return nil, err
 	}
-
-	yamlout, err := yaml.JSONToYAML(jsonout)
-	if err != nil {
-		return nil, err
+	out := make(manifest.List, 0, len(extract))
+	for _, m := range extract {
+		out = append(out, m)
 	}
 
 	bundle = append(bundle, File{
 		path:    "manifest.yaml",
-		content: yamlout,
+		content: []byte(out.String()),
 	})
 
 	return bundle, nil
