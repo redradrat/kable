@@ -101,7 +101,10 @@ kable render -l . -o out/
 			} else {
 				PrintError("error parsing existing renderinfo: %s", err)
 			}
-		} else {
+		}
+
+		// Ask for values if renderinfo does not exist
+		if existingRenderInfo {
 			vals := *ri.Values
 			for k, _ := range cpt.Inputs.Mandatory {
 				if _, ok := vals[k]; !ok {
@@ -109,11 +112,14 @@ kable render -l . -o out/
 				}
 			}
 			avs = &vals
-		}
 
-		// Ask for values if renderinfo does not exist or values are outdated
-		if !existingRenderInfo || outdatedValues {
-			PrintMsg("No existing render or outdated values detected...")
+			if outdatedValues {
+				PrintError("Detected outdated values in renderinfo.json")
+			}
+		} else {
+			if printOnly {
+				PrintError("Cannot use print mode without preexisting renderinfo.json")
+			}
 			avs, err = NewInputDialog(cpt.Inputs).RunInputDialog()
 			if err != nil {
 				PrintError("error processing concept inputs: %s", err)

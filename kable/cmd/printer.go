@@ -20,9 +20,7 @@ func PrintTable(headers []string, lines ...[]string) {
 }
 
 func PrintError(format string, a ...interface{}) {
-	if !silent {
-		fmt.Println(fmt.Errorf(color.RedString("! "+format, a...)))
-	}
+	fmt.Println(fmt.Errorf(color.RedString("! "+format, a...)))
 	os.Exit(1)
 }
 
