@@ -71,3 +71,15 @@ Supported Targets:
 * YAML
 * FluxCD Application (upcoming)
 * Kable Application (upcoming)
+
+## Concepts
+
+A *concept* is a blueprint of an app. It is written in a specific language can be rendered to various outputs.
+
+Supported Types:
+* Jsonnet
+* JavaScript/Typescript (upcoming)
+
+Each concept needs to build on its own, that's why there is no dependency concept in kable. If let's say a Jsonnet concept depends on another Jsonnet concept, this should be realized via the Jsonnet-specific package management.
+
+### Inputs 

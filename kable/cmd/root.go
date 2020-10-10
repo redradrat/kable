@@ -39,15 +39,13 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	usedConfig, err := config.ReadConfig(cfgFile)
+	_, err := config.ReadConfig(cfgFile)
 	if err != nil {
 		PrintError("Cannot read config file: %s \n", err)
 	}
-
-	PrintMsg("Using config file: %s \n", usedConfig)
 }

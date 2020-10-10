@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -28,6 +30,9 @@ import (
 var outpath string
 var conceptRenderTargetType string
 var local bool
+var single bool
+var renderinfo string
+var printOnly bool
 
 // renderConceptCmd represents the create command
 var renderConceptCmd = &cobra.Command{
@@ -62,6 +67,10 @@ kable render -l . -o out/
 	Run: func(cmd *cobra.Command, args []string) {
 		conceptIdentifier := concepts.ConceptIdentifier(args[0])
 
+		silent = printOnly
+		// We only want to print in singlefile mode
+		single = printOnly
+
 		// If local let's get our concept from here, otherwise from the cache
 		var cpt *concepts.Concept
 		var err error
@@ -80,7 +89,12 @@ kable render -l . -o out/
 		var avs *concepts.RenderValues
 		existingRenderInfo := true
 		outdatedValues := false
-		ri, err := concepts.ParseRenderInfoV1FromFile(filepath.Join(outpath, concepts.ConceptRenderFileName))
+		var ri *concepts.RenderInfoV1
+		if renderinfo != "" {
+			ri, err = concepts.ParseRenderInfoV1FromFile(renderinfo)
+		} else {
+			ri, err = concepts.ParseRenderInfoV1FromFile(filepath.Join(outpath, concepts.ConceptRenderFileName))
+		}
 		if err != nil {
 			if os.IsNotExist(err) {
 				existingRenderInfo = false
@@ -109,19 +123,32 @@ kable render -l . -o out/
 		// Now let's render our app
 		PrintMsg("Rendering concept...")
 		var bundle *concepts.Render
-		if !local {
-			bundle, err = concepts.RenderRepoConcept(conceptIdentifier, avs, concepts.TargetType(conceptRenderTargetType))
-		} else {
-			bundle, err = concepts.RenderConcept(conceptIdentifier.String(), avs, concepts.TargetType(conceptRenderTargetType))
-		}
+		bundle, err = concepts.RenderConcept(conceptIdentifier.String(), avs, concepts.TargetType(conceptRenderTargetType), concepts.RenderOpts{Single: single, Local: local, WriteRenderInfo: renderinfo == ""})
 		if err != nil {
 			PrintError("unable to render concept: %s", err)
 		}
 
-		if err := bundle.Write(outpath); err != nil {
-			PrintError("unable to write rendered concept to file system: %s", err)
+		if !printOnly {
+			_, err := ioutil.ReadDir(outpath)
+			if err != nil && !os.IsNotExist(err) {
+				PrintError("unable to read directory '%s' for rendering: %s", outpath, err)
+			}
 		}
-		PrintSuccess("Successfully created concept!")
+
+		if printOnly {
+			fmt.Print(bundle.PrintFiles())
+		} else {
+			if renderinfo == "" {
+				if err := bundle.WriteInfo(outpath); err != nil {
+					PrintError("unable to write renderinfo to file system: %s", err)
+				}
+			}
+			if err := bundle.WriteFiles(outpath); err != nil {
+				PrintError("unable to write rendered concept to file system: %s", err)
+			}
+			PrintSuccess("Successfully created concept!")
+		}
+
 	},
 }
 
@@ -138,5 +165,8 @@ func init() {
 	// is called directly, e.g.:
 	renderConceptCmd.Flags().StringVarP(&outpath, "output", "o", ".", "The output directory this app will be placed in")
 	renderConceptCmd.Flags().BoolVarP(&local, "local", "l", false, "Whether to read the concept from a local path")
+	renderConceptCmd.Flags().BoolVarP(&single, "single", "s", false, "Render into a single manifest.yaml file")
+	renderConceptCmd.Flags().StringVarP(&renderinfo, "renderinfo", "r", "", "Path to an existing renderinfo to use. (skips writing renderinfo.json)")
 	renderConceptCmd.Flags().StringVarP(&conceptRenderTargetType, "targetType", "t", string(concepts.YamlTargetType), "The target format, this concept will be rendered as")
+	renderConceptCmd.Flags().BoolVarP(&printOnly, "print", "p", false, "Runs silent and prints manifests to stdout. (renderinfo.json needs to exist)")
 }

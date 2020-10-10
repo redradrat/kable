@@ -28,7 +28,7 @@ type File struct {
 }
 
 type Render struct {
-	Info  File
+	Info  *File
 	Files []File
 }
 
@@ -36,27 +36,49 @@ func (f File) String() string {
 	return string(f.content)
 }
 
-func (b Render) Write(baseDir string) error {
-	writeFile := func(file File) error {
-		path := filepath.Join(baseDir, file.path)
-		if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(path, file.content, 0666); err != nil {
-			return err
-		}
-		return nil
+func (r Render) PrintFiles() string {
+	var out []byte
+	for _, file := range r.Files {
+		out = append(out, file.content...)
 	}
+	return string(out)
+}
 
-	for _, file := range b.Files {
-		if err := writeFile(file); err != nil {
-			return err
-		}
-	}
-	if err := writeFile(b.Info); err != nil {
+func writeFile(file File, baseDir string) error {
+	path := filepath.Join(baseDir, file.path)
+	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return err
 	}
+	if err := ioutil.WriteFile(path, file.content, 0666); err != nil {
+		return err
+	}
+	return nil
+}
 
+func (r Render) WriteFiles(baseDir string) error {
+	for _, file := range r.Files {
+		if err := writeFile(file, baseDir); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r Render) Write(baseDir string) error {
+	err := r.WriteFiles(baseDir)
+	if err != nil {
+		return err
+	}
+	return r.WriteInfo(baseDir)
+}
+
+func (r Render) WriteInfo(baseDir string) error {
+	if r.Info != nil {
+		if err := writeFile(*r.Info, baseDir); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -175,6 +197,12 @@ type RenderMeta struct {
 	DateCreated string `json:"date"`
 }
 
+type RenderOpts struct {
+	Local           bool
+	WriteRenderInfo bool
+	Single          bool
+}
+
 func NewRenderV1(avs *RenderValues, origin *ConceptOrigin) (*RenderInfoV1, error) {
 	render := RenderInfoV1{
 		Version: 1,
@@ -188,11 +216,33 @@ func NewRenderV1(avs *RenderValues, origin *ConceptOrigin) (*RenderInfoV1, error
 	return &render, nil
 }
 
-func RenderConcept(path string, avs *RenderValues, ttype TargetType) (*Render, error) {
-	return renderConcept(path, nil, avs, ttype)
+func RenderConcept(path string, avs *RenderValues, ttype TargetType, opts RenderOpts) (*Render, error) {
+	return renderConcept(path, avs, ttype, opts)
 }
 
-func renderConcept(path string, origin *ConceptOrigin, avs *RenderValues, ttype TargetType) (*Render, error) {
+func renderConcept(id string, avs *RenderValues, ttype TargetType, opts RenderOpts) (*Render, error) {
+	var err error
+	var origin *ConceptOrigin
+	path := id
+	if !opts.Local {
+		// Check if the identifier is correct
+		if !IsValidConceptIdentifier(id) {
+			return nil, errors.InvalidConceptIdentifierError
+		}
+
+		// Get the repo path
+		path, err = GetRepoConceptPath(ConceptIdentifier(id))
+		if err != nil {
+			return nil, err
+		}
+
+		// Get the origin of the the concept
+		origin, err = GetConceptOrigin(ConceptIdentifier(id))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var target Target
 	switch ttype {
 	case YamlTargetType:
@@ -208,7 +258,7 @@ func renderConcept(path string, origin *ConceptOrigin, avs *RenderValues, ttype 
 		return nil, err
 	}
 
-	render, err := target.Render(path, avs, cpt.Type)
+	render, err := target.Render(path, avs, cpt.Type, opts.Single)
 	if err != nil {
 		return nil, err
 	}
@@ -223,28 +273,10 @@ func renderConcept(path string, origin *ConceptOrigin, avs *RenderValues, ttype 
 		return nil, err
 	}
 
-	render.Info = File{
+	render.Info = &File{
 		path:    ConceptRenderFileName,
 		content: appFile,
 	}
-
-	return render, nil
-}
-
-func RenderRepoConcept(ci ConceptIdentifier, avs *RenderValues, ttype TargetType) (*Render, error) {
-	// As the initialization check has been done via GetRepoConcept
-	conceptPath, err := GetRepoConceptPath(ci)
-	if err != nil {
-		return nil, err
-	}
-
-	// Compile ConceptRender File
-	origin, err := GetConceptOrigin(ci)
-	if err != nil {
-		return nil, err
-	}
-
-	render, err := renderConcept(conceptPath, origin, avs, ttype)
 
 	return render, nil
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+var silent bool
+
 func PrintTable(headers []string, lines ...[]string) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAutoWrapText(false)
@@ -18,18 +20,26 @@ func PrintTable(headers []string, lines ...[]string) {
 }
 
 func PrintError(format string, a ...interface{}) {
-	fmt.Println(fmt.Errorf(color.RedString("! "+format, a...)))
+	if !silent {
+		fmt.Println(fmt.Errorf(color.RedString("! "+format, a...)))
+	}
 	os.Exit(1)
 }
 
 func PrintSuccess(format string, a ...interface{}) {
-	fmt.Println(color.GreenString("✔ "+format, a...))
+	if !silent {
+		fmt.Println(color.GreenString("✔ "+format, a...))
+	}
 }
 
 func PrintMsg(format string, a ...interface{}) {
-	fmt.Println(fmt.Sprintf(format, a...))
+	if !silent {
+		fmt.Println(fmt.Sprintf(format, a...))
+	}
 }
 
 func PrintWarning(format string, a ...interface{}) {
-	fmt.Println(color.YellowString("! "+format, a...))
+	if !silent {
+		fmt.Println(color.YellowString("! "+format, a...))
+	}
 }
