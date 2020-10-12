@@ -4,6 +4,8 @@
 
 # Kable
 ![Go](https://github.com/redradrat/kable/workflows/Go/badge.svg?branch=master)
+![Release](https://img.shields.io/github/v/release/redradrat/kable)
+![License](https://img.shields.io/github/license/redradrat/kable)
 
 A tool to manage kubernetes specs in a GitOps fashion.
 
