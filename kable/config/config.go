@@ -22,6 +22,7 @@ var RootDir string
 var UserDir string
 var CurDir string
 var RepoDir string
+var CacheDir string
 var ConceptDir string
 var cfgHierarchy []string
 
@@ -43,6 +44,7 @@ func init() {
 	UserDir = filepath.Join(home + "/.kable/")
 	RepoDir = filepath.Join(UserDir, "/repos/")
 	ConceptDir = filepath.Join(UserDir, "/concepts/")
+	CacheDir = filepath.Join(UserDir, "/cache/")
 	CurDir = "./"
 	cfgHierarchy = []string{
 		filepath.Join(CurDir, ConfigFileName),

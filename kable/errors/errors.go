@@ -15,4 +15,7 @@ var (
 	ConceptDirInvalidError        = errors.New("directory is not a concept directory")
 	InvalidRenderNameError        = errors.New("given app name is invalid (only allowed: 'a-z', '-', '_')")
 	ValueTypeNotSupported         = errors.New("given value type is not supported")
+	NotDirError                   = errors.New("given path is not a directory")
+	UnsupportedURISchemeError     = errors.New("given URI scheme is not supported")
+	NotHelmChartError             = errors.New("given repository path is not a valid helm chart")
 )
