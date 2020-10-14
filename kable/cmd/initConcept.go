@@ -43,7 +43,7 @@ var initConceptCmd = &cobra.Command{
 			PrintError("given concept type is unsupported")
 		}
 
-		if err := concepts.InitConcept(name, concepts.ConceptType(conceptTypeInput)); err != nil {
+		if err := concepts.InitConcept(".", name, concepts.ConceptType(conceptTypeInput)); err != nil {
 			PrintError("unable to initialize concept dir: %s", err)
 		}
 		PrintSuccess("Successfully initialized Concept!")

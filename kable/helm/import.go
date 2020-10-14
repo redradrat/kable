@@ -3,27 +3,26 @@ package helm
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"text/template"
+
+	"github.com/grafana/tanka/pkg/helm"
+
+	"github.com/redradrat/kable/kable/concepts"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
-
-	"github.com/otiai10/copy"
-	"github.com/redradrat/kable/kable/config"
-
-	"github.com/redradrat/kable/kable/errors"
 )
 
 const jsonnetTpl = `local helm = (import "github.com/grafana/jsonnet-libs/helm-util/helm.libsonnet").new(std.thisFile);
 
 {
-  {{.Name}}: helm.template("{{.Name}}", "./charts/{{.Name}}", {
+  {{.Name}}: helm.template("{{.Name}}", "../charts/{{.Name}}", {
     namespace: "default",
     values: {
       foo: { bar: baz }
@@ -32,46 +31,107 @@ const jsonnetTpl = `local helm = (import "github.com/grafana/jsonnet-libs/helm-u
 }
 `
 
+const helmConceptLibTpl = `local helm = (import "github.com/grafana/jsonnet-libs/helm-util/helm.libsonnet").new(std.thisFile);
+
+{
+  _values:: {
+    foo: error "missing value foo"
+  },
+  {{.Name}}: helm.template("{{.Name}}", "../charts/{{.Name}}", {
+    namespace: "default",
+    values: $._values
+  })
+}
+`
+const helmConceptMainTpl = `local lib = import "lib/{{.Name}}.libsonnet";
+
+local values = {
+  foo: "test"
+};
+
+lib + { _values+: values }
+`
+
 type HelmChart struct {
-	URL    string
-	Subdir *string
+	Repo    string
+	Name    string
+	Version string
 }
 
-func ImportHelmChart(chart HelmChart, out string) error {
-	basedir := config.CacheDir
-	path, err := cloneAndCheckRepo(chart.URL, basedir)
+func (hc HelmChart) Requirement() string {
+	return fmt.Sprintf("%s/%s@%s", hc.Repo, hc.Name, hc.Version)
+}
+
+func InitHelmConcept(chart HelmChart, out string) error {
+
+	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-
-	var chartPath string
-	if chart.Subdir != nil {
-		chartPath = filepath.Join(path, *chart.Subdir)
-	} else {
-		chartPath = path
+	if err := os.MkdirAll(out, os.ModePerm); err != nil {
+		return err
 	}
-
-	if !isHelmRepo(chartPath) {
-		return errors.NotHelmChartError
-	}
-
-	chartName := filepath.Base(chartPath)
-	if err := copy.Copy(chartPath, filepath.Join(out, "/charts/", chartName)); err != nil {
+	if err := os.Chdir(out); err != nil {
 		return err
 	}
 
-	tpl, err := template.New("jsonnet").Parse(jsonnetTpl)
+	// Initialize a concept
+	if err := concepts.InitConcept(".", chart.Name, concepts.ConceptJsonnetType); err != nil {
+		return err
+	}
+	libpath := filepath.Join(concepts.ConceptLibDir, concepts.ConceptMainlibsonnet)
+	if err := os.Remove(libpath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	mainpath := filepath.Join(concepts.ConceptMainJsonnet)
+	if err := os.Remove(mainpath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err := ImportHelmChart(chart, "."); err != nil {
+		return err
+	}
+
+	librender, err := templateString(chart.Name, helmConceptLibTpl)
+	mainrender, err := templateString(chart.Name, helmConceptMainTpl)
+
+	if err := ioutil.WriteFile(filepath.Join(concepts.ConceptLibDir, chart.Name+".libsonnet"), librender, 0644); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(mainpath, mainrender, 0644); err != nil {
+		return err
+	}
+
+	if err := os.Chdir(wd); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ImportHelmChart(helmChart HelmChart, out string) error {
+
+	// TODO (redradrat): Try to make upstream's logging configurable (silent)
+	cf, err := helm.InitChartfile(filepath.Join(out, "chartfile.yaml"))
+	if err != nil {
+		if os.IsExist(err) {
+			cf, err = helm.LoadChartfile(filepath.Join(out, "chartfile.yaml"))
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	}
+
+	if err := cf.Add([]string{helmChart.Requirement()}); err != nil {
+		return err
+	}
+
+	libsonnetPath := filepath.Join(out, "/lib/", helmChart.Name+".libsonnet")
+	render, err := templateString(helmChart.Name, jsonnetTpl)
 	if err != nil {
 		return err
 	}
-	buf := bytes.Buffer{}
-	if err := tpl.Execute(&buf, struct {
-		Name string
-	}{Name: chartName}); err != nil {
-		return err
-	}
-
-	if err := ioutil.WriteFile(filepath.Join(out, "/lib/", chartName+".jsonnet"), buf.Bytes(), os.ModePerm); err != nil {
+	if err := ioutil.WriteFile(libsonnetPath, render, 0644); err != nil {
 		return err
 	}
 
@@ -97,9 +157,8 @@ func ImportHelmChart(chart HelmChart, out string) error {
 			},
 			Version: "master",
 		}
-		name := libDep.Name()
-		if _, ok := bundle.Dependencies[name]; !ok {
-			bundle.Dependencies[name] = libDep
+		if _, ok := bundle.Dependencies[libDep.Name()]; !ok {
+			bundle.Dependencies[libDep.Name()] = libDep
 
 			b, err := json.MarshalIndent(bundle, "", "  ")
 			if err != nil {
@@ -111,6 +170,9 @@ func ImportHelmChart(chart HelmChart, out string) error {
 				return err
 			}
 
+			if err := os.Chdir(out); err != nil {
+				return err
+			}
 			if err := exec.Command("jb", "install").Run(); err != nil {
 				return err
 			}
@@ -120,25 +182,16 @@ func ImportHelmChart(chart HelmChart, out string) error {
 	}
 }
 
-func cloneAndCheckRepo(gitUrl, dir string) (string, error) {
-	uri, err := url.Parse(gitUrl)
+func templateString(chart, s string) ([]byte, error) {
+	tpl, err := template.New("jsonnet").Parse(s)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	if !(uri.Scheme == "http" || uri.Scheme == "https") {
-		return "", errors.UnsupportedURISchemeError
+	buf := bytes.Buffer{}
+	if err := tpl.Execute(&buf, struct {
+		Name string
+	}{Name: chart}); err != nil {
+		return nil, err
 	}
-
-	path := filepath.Join(dir, filepath.Base(uri.Path))
-	if err := Checkout(gitUrl, path); err != nil {
-		return "", err
-	}
-
-	return path, nil
-}
-
-func isHelmRepo(path string) bool {
-	_, err := os.Stat(filepath.Join(path, "Chart.yaml"))
-	return err == nil
+	return buf.Bytes(), nil
 }

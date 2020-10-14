@@ -311,7 +311,7 @@ func ListConcepts() ([]ConceptRepoInfo, error) {
 	return repoList, nil
 }
 
-func InitConcept(name string, conceptType ConceptType) error {
+func InitConcept(workdir, name string, conceptType ConceptType) error {
 	cpt := Concept{
 		ApiVersion: 1,
 		Type:       conceptType,
@@ -332,27 +332,33 @@ func InitConcept(name string, conceptType ConceptType) error {
 		},
 	}
 
+	if workdir != "." {
+		if err := os.MkdirAll(workdir, os.ModePerm); err != nil {
+			return err
+		}
+	}
+
 	switch conceptType {
 	case ConceptJsonnetType:
-		if err := createFile(JsonnetMainTemplate, ConceptMainJsonnet); err != nil {
+		if err := createFile(JsonnetMainTemplate, filepath.Join(workdir, ConceptMainJsonnet)); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetDepTemplate, ConceptJsonnetfile); err != nil {
+		if err := createFile(JsonnetDepTemplate, filepath.Join(workdir, ConceptJsonnetfile)); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetMakeFile, ConceptMakefile); err != nil {
+		if err := createFile(JsonnetMakeFile, filepath.Join(workdir, ConceptMakefile)); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetGitignoreFile, ConceptGitignorefile); err != nil {
+		if err := createFile(JsonnetGitignoreFile, filepath.Join(workdir, ConceptGitignorefile)); err != nil {
 			return err
 		}
-		if err := os.MkdirAll(ConceptLibDir, os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Join(workdir, ConceptLibDir), os.ModePerm); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetMainLibTemplate, filepath.Join(ConceptLibDir, ConceptMainlibsonnet)); err != nil {
+		if err := createFile(JsonnetMainLibTemplate, filepath.Join(filepath.Join(workdir, ConceptLibDir), ConceptMainlibsonnet)); err != nil {
 			return err
 		}
-		if err := createFile(JsonnetLibTemplate, filepath.Join(ConceptLibDir, ConceptKlibsonnet)); err != nil {
+		if err := createFile(JsonnetLibTemplate, filepath.Join(filepath.Join(workdir, ConceptLibDir), ConceptKlibsonnet)); err != nil {
 			return err
 		}
 
@@ -365,7 +371,7 @@ func InitConcept(name string, conceptType ConceptType) error {
 		return errors.ConceptTypeUnsupportedError
 	}
 
-	if err := createJson(cpt, "./concept.json"); err != nil {
+	if err := createJson(cpt, filepath.Join(workdir, "concept.json")); err != nil {
 		return err
 	}
 	return nil

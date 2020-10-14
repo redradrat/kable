@@ -18,20 +18,20 @@ package cmd
 import (
 	"errors"
 
-	"github.com/redradrat/kable/kable/concepts"
-
 	"github.com/redradrat/kable/kable/helm"
 
 	"github.com/spf13/cobra"
 )
 
-var importSubdir string
+var chartVersion string
+var chartRepo string
+var dir string
 
 // helmImportCmd represents the import command
-var helmImportCmd = &cobra.Command{
-	Use:     "import",
-	Short:   "Import a helm chart from a helm repo into the concept",
-	Example: "kable helm import sentry --repo stable --version 4.3.0",
+var helmConceptCmd = &cobra.Command{
+	Use:     "concept",
+	Short:   "Create a concept, wrapping a helm chart from a git repo",
+	Example: "kable helm concept --directory sentry sentry --repo stable --version 4.3.0",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("requires exactly ONE argument")
@@ -39,18 +39,15 @@ var helmImportCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := concepts.GetConcept("."); err != nil {
-			PrintError("current directory is not a concept directory: %s", err)
-		}
-		PrintMsg("Importing helm chart '%s' into current concept...", args[0])
-		if err := helm.ImportHelmChart(helm.HelmChart{Name: args[0], Version: chartVersion, Repo: chartRepo}, dir); err != nil {
+		PrintMsg("Creating concept from helm chart '%s'...", args[0])
+		if err := helm.InitHelmConcept(helm.HelmChart{Name: args[0], Version: chartVersion, Repo: chartRepo}, dir); err != nil {
 			PrintError("unable to import helm chart: %s", err)
 		}
 	},
 }
 
 func init() {
-	helmCmd.AddCommand(helmImportCmd)
+	helmCmd.AddCommand(helmConceptCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -60,7 +57,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	helmImportCmd.Flags().StringVarP(&chartVersion, "version", "v", "", "The version of the helm chart.")
-	helmImportCmd.Flags().StringVarP(&chartRepo, "repo", "r", ".", "The repo where the helm chart resides.")
-	helmImportCmd.Flags().StringVarP(&dir, "directory", "d", ".", "The directory of the concept.")
+	helmConceptCmd.Flags().StringVarP(&chartVersion, "version", "v", "", "The version of the helm chart.")
+	helmConceptCmd.Flags().StringVarP(&chartRepo, "repo", "r", "stable", "The repo where the helm chart resides.")
+	helmConceptCmd.Flags().StringVarP(&dir, "directory", "d", ".", "The directory to create the concept in.")
 }
