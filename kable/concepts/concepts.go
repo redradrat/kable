@@ -20,7 +20,7 @@ import (
 
 const (
 	ConceptFileName                               = "concept.json"
-	ConceptIdentifierRegex                        = "^([a-z/]+)@([a-z]+)$"
+	ConceptIdentifierRegex                        = "^([a-z/\\-123456789]+)@([a-z]+)$"
 	ConceptStringInputType    InputTypeIdentifier = "string"
 	ConceptSelectionInputType InputTypeIdentifier = "select"
 	ConceptMapInputType       InputTypeIdentifier = "map"
