@@ -32,6 +32,5 @@ jobs:
         fi
 
     - name: Build
-      working-directory: kable
       run: make build
             
