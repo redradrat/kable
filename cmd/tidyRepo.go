@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/redradrat/kable/repositories"
+	"github.com/redradrat/kable/pkg/repositories"
 	"github.com/spf13/cobra"
 )
 

@@ -10,7 +10,7 @@ import (
 	"github.com/grafana/tanka/pkg/process"
 	"github.com/grafana/tanka/pkg/tanka"
 
-	"github.com/redradrat/kable/errors"
+	"github.com/redradrat/kable/pkg/errors"
 )
 
 const (

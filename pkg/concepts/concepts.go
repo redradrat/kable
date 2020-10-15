@@ -10,9 +10,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/redradrat/kable/repositories"
+	"github.com/redradrat/kable/pkg/repositories"
 
-	"github.com/redradrat/kable/errors"
+	"github.com/redradrat/kable/pkg/errors"
 
 	"github.com/go-git/go-git/v5"
 	giturls "github.com/whilp/git-urls"

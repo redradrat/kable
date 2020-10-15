@@ -9,7 +9,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 
-	"github.com/redradrat/kable/concepts"
+	"github.com/redradrat/kable/pkg/concepts"
 )
 
 type InputDialog struct {

@@ -12,7 +12,7 @@ import (
 
 	"github.com/grafana/tanka/pkg/helm"
 
-	"github.com/redradrat/kable/concepts"
+	"github.com/redradrat/kable/pkg/concepts"
 
 	"github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 

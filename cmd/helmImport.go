@@ -18,9 +18,9 @@ package cmd
 import (
 	"errors"
 
-	"github.com/redradrat/kable/concepts"
+	"github.com/redradrat/kable/pkg/concepts"
 
-	"github.com/redradrat/kable/helm"
+	"github.com/redradrat/kable/pkg/helm"
 
 	"github.com/spf13/cobra"
 )

@@ -21,9 +21,8 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/redradrat/kable/repositories"
-
-	errors2 "github.com/redradrat/kable/errors"
+	kableerrors "github.com/redradrat/kable/pkg/errors"
+	"github.com/redradrat/kable/pkg/repositories"
 
 	"github.com/spf13/cobra"
 )
@@ -62,7 +61,7 @@ var addRepoCmd = &cobra.Command{
 				}
 				err = repositories.AddAuthRepository(name, repoUrl, user, pw, "master")
 				if err != nil {
-					if !errors.Is(err, errors2.RepositoryAlreadyExistsError) {
+					if !errors.Is(err, kableerrors.RepositoryAlreadyExistsError) {
 						PrintError("unable to add repository: %s", err)
 					} else {
 						PrintSuccess("Repository already configured!")

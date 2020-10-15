@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redradrat/kable/config"
+	"github.com/redradrat/kable/pkg/config"
 
 	"github.com/spf13/cobra"
 )
