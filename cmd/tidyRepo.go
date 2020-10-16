@@ -26,7 +26,7 @@ var tidyCmd = &cobra.Command{
 	Short: "Clean up removed, cached repos",
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Tidying up cached repositories...")
-		err := repositories.TidyRepositories()
+		err := repositories.TidyCache()
 		if err != nil {
 			PrintError("unable to clean up repositories: %s", err)
 		}

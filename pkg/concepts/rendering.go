@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/redradrat/kable/pkg/repositories"
+
 	"github.com/redradrat/kable/pkg/errors"
 )
 
@@ -230,16 +232,21 @@ func renderConcept(id string, avs *RenderValues, ttype TargetType, opts RenderOp
 			return nil, errors.InvalidConceptIdentifierError
 		}
 
+		r, err := repositories.GetRepository(id)
+		if err != nil {
+			return nil, err
+		}
+
 		// Get the repo path
-		path, err = GetRepoConceptPath(ConceptIdentifier(id))
+		path, err = r.AbsolutePath()
 		if err != nil {
 			return nil, err
 		}
 
 		// Get the origin of the the concept
-		origin, err = GetConceptOrigin(ConceptIdentifier(id))
-		if err != nil {
-			return nil, err
+		origin = &ConceptOrigin{
+			Repository: r.URL,
+			Ref:        r.GitRef,
 		}
 	}
 

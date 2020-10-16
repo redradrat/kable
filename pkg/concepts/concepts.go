@@ -13,9 +13,6 @@ import (
 	"github.com/redradrat/kable/pkg/repositories"
 
 	"github.com/redradrat/kable/pkg/errors"
-
-	"github.com/go-git/go-git/v5"
-	giturls "github.com/whilp/git-urls"
 )
 
 const (
@@ -183,21 +180,15 @@ func (iti InputTypeIdentifier) String() string {
 }
 
 func GetRepoConcept(cid ConceptIdentifier) (*Concept, error) {
-	path, err := GetRepoConceptPath(cid)
+	r, err := repositories.GetRepository(cid.Repo())
 	if err != nil {
 		return nil, err
 	}
-	return GetConcept(path)
-}
-
-func GetRepoConceptPath(cid ConceptIdentifier) (string, error) {
-	if !cid.IsValid() {
-		return "", errors.InvalidConceptIdentifierError
+	path, err := r.AbsolutePath()
+	if err != nil {
+		return nil, err
 	}
-	if !repositories.IsInitialized(cid.Repo()) {
-		return "", errors.RepositoryNotInitializedError
-	}
-	return filepath.Join(repositories.MustGetCacheInfo(cid.Repo()).AbsolutePath(), filepath.Join(cid.Concept())), nil
+	return GetConcept(filepath.Join(path, cid.Concept()))
 }
 
 func GetConcept(path string) (*Concept, error) {
@@ -218,44 +209,8 @@ type ConceptOrigin struct {
 	Ref        string `json:"ref"`
 }
 
-func GetConceptOrigin(cid ConceptIdentifier) (*ConceptOrigin, error) {
-	if !cid.IsValid() {
-		return nil, errors.InvalidConceptIdentifierError
-	}
-	if !repositories.IsInitialized(cid.Repo()) {
-		return nil, errors.RepositoryNotInitializedError
-	}
-	repo, err := git.PlainOpen(repositories.MustGetCacheInfo(cid.Repo()).AbsolutePath())
-	if err != nil {
-		return nil, err
-	}
-
-	repoURL, err := repo.Remote(git.DefaultRemoteName)
-	if err != nil {
-		return nil, err
-	}
-
-	parsedURL, err := giturls.Parse(repoURL.Config().URLs[0])
-	if err != nil {
-		return nil, err
-	}
-
-	repoID := parsedURL.Host + parsedURL.Path
-
-	ref, err := repo.Head()
-	if err != nil {
-		return nil, err
-	}
-
-	origin := ConceptOrigin{
-		Repository: strings.TrimSuffix(repoID, ".git"),
-		Ref:        ref.Hash().String(),
-	}
-	return &origin, nil
-}
-
 type ConceptRepoInfo struct {
-	Concept Concept
+	Concept string
 	Path    string
 	RepoId  string
 }
@@ -276,39 +231,22 @@ func (mi MaintainerInfo) String() string {
 	return strings.Join(elements, " ")
 }
 
-func ListConceptsForRepo(repoid string) ([]ConceptRepoInfo, error) {
-	var concepts []ConceptRepoInfo
-	if !repositories.IsInitialized(repoid) {
-		return concepts, nil
-	}
-	ri, err := repositories.GetRepoIndex(repoid)
-	if err != nil {
-		return nil, err
-	}
-	for _, entry := range ri.ConceptEntries {
-		c, err := GetRepoConcept(NewConceptIdentifier(entry, repoid))
-		if err != nil {
-			return concepts, err
-		}
-		concepts = append(concepts, ConceptRepoInfo{RepoId: repoid, Path: entry, Concept: *c})
-	}
-	return concepts, nil
-}
-
-func ListConcepts() ([]ConceptRepoInfo, error) {
-	var repoList []ConceptRepoInfo
+func ListConcepts() ([]ConceptIdentifier, error) {
+	var cis []ConceptIdentifier
 	repos, err := repositories.ListRepositories()
 	if err != nil {
 		return nil, err
 	}
-	for id, _ := range repos {
-		concepts, err := ListConceptsForRepo(id)
+	for _, repo := range repos {
+		idx, err := repo.RepoIndex()
 		if err != nil {
 			return nil, err
 		}
-		repoList = append(repoList, concepts...)
+		for _, path := range idx.ConceptEntries {
+			cis = append(cis, NewConceptIdentifier(path, repo.Name))
+		}
 	}
-	return repoList, nil
+	return cis, nil
 }
 
 func InitConcept(workdir, name string, conceptType ConceptType) error {

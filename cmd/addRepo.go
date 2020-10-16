@@ -18,14 +18,14 @@ package cmd
 import (
 	"errors"
 	"net/url"
-	"os"
 	"regexp"
 
-	kableerrors "github.com/redradrat/kable/pkg/errors"
 	"github.com/redradrat/kable/pkg/repositories"
 
 	"github.com/spf13/cobra"
 )
+
+var repoAuth bool
 
 // addRepoCmd represents the add command
 var addRepoCmd = &cobra.Command{
@@ -52,23 +52,30 @@ var addRepoCmd = &cobra.Command{
 		PrintMsg("Fetching repository...")
 		name := args[0]
 		repoUrl := args[1]
-		err := repositories.AddRepository(name, repoUrl, "master")
-		if err != nil {
-			if err.Error() == "authentication required" {
-				user, pw, err := RunAuthDialog()
-				if err != nil {
-					PrintError("unable to display authentication dialog: %s", err)
-				}
-				err = repositories.AddAuthRepository(name, repoUrl, user, pw, "master")
-				if err != nil {
-					if !errors.Is(err, kableerrors.RepositoryAlreadyExistsError) {
-						PrintError("unable to add repository: %s", err)
-					} else {
-						PrintSuccess("Repository already configured!")
-						os.Exit(0)
-					}
-				}
+
+		var usr *string
+		if repoAuth {
+			user, pw, err := RunAuthDialog()
+			if err != nil {
+				PrintError("unable to display authentication dialog: %s", err)
 			}
+			if err := repositories.StoreRepoAuth(name, repositories.AuthPair{Username: user, Password: pw}); err != nil {
+				PrintError("unable to store authentication data: %s", err)
+			}
+			usr = &user
+		}
+
+		mod := repositories.AddRepository(repositories.Repository{
+			Name: name,
+			GitRepository: repositories.GitRepository{
+				URL:    repoUrl,
+				GitRef: "refs/heads/master",
+			},
+			Username: usr,
+		})
+		err := repositories.UpdateRegistry(mod)
+		if err != nil {
+			PrintError("unable to update registry: %s", err)
 		}
 		PrintSuccess("Successfully added repository!")
 	},
@@ -85,5 +92,5 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	addRepoCmd.Flags().BoolVar(&repoAuth, "auth", false, "Whether auth is required to be stored for this repo.")
 }

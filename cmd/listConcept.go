@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	concepts2 "github.com/redradrat/kable/pkg/concepts"
+	"github.com/redradrat/kable/pkg/concepts"
 	"github.com/spf13/cobra"
 )
 
@@ -25,16 +25,20 @@ var listConceptsCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available concepts",
 	Run: func(cmd *cobra.Command, args []string) {
-		concepts, err := concepts2.ListConcepts()
+		cis, err := concepts.ListConcepts()
 		if err != nil {
 			PrintError("unable to list concepts: %s", err)
 		}
 		var outList [][]string
-		for _, pair := range concepts {
+		for _, ci := range cis {
+			c, err := concepts.GetRepoConcept(ci)
+			if err != nil {
+				PrintError("error getting concept '%s': %s", ci.String(), err)
+			}
 			outList = append(outList, []string{
-				pair.Path,
-				pair.RepoId,
-				pair.Concept.Meta.Maintainer.String(),
+				ci.Concept(),
+				ci.Repo(),
+				c.Meta.Maintainer.String(),
 			})
 		}
 		PrintTable([]string{"ID", "Repository", "Maintainer"}, outList...)

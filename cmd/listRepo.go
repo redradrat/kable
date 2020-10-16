@@ -16,8 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"strconv"
-
 	"github.com/redradrat/kable/pkg/repositories"
 	"github.com/spf13/cobra"
 )
@@ -25,23 +23,18 @@ import (
 // listReposCmd represents the list command
 var listReposCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Lists all concept repositories in the current config",
+	Short: "Lists all available concept repositories",
 	Run: func(cmd *cobra.Command, args []string) {
-		repoMap, err := repositories.ListRepositories()
+		repos, err := repositories.ListRepositories()
 		if err != nil {
 			PrintError("cannot list repositories: %s \n", err)
 		}
-
 		var repoSlices [][]string
-		for id, uri := range repoMap {
-			if repositories.IsInitialized(id) {
-				repoSlices = append(repoSlices, []string{id, uri, strconv.FormatBool(true)})
-			} else {
-				repoSlices = append(repoSlices, []string{id, uri, strconv.FormatBool(false)})
-			}
+		for _, repo := range repos {
+			repoSlices = append(repoSlices, []string{repo.Name, repo.URL, repo.GitRef})
 		}
 
-		PrintTable([]string{"ID", "URL", "Initialized"}, repoSlices...)
+		PrintTable([]string{"ID", "URL", "Ref"}, repoSlices...)
 	},
 }
 
