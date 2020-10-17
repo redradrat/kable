@@ -4,24 +4,43 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-func RunAuthDialog() (string, string, error) {
-	username := ""
-	inPrompt := &survey.Input{
-		Message: "Please type your username",
-	}
-	err := survey.AskOne(inPrompt, &username)
-	if err != nil {
-		return "", "", err
+// RunAuthDialog runs a dialog to ask for additionally needed auth info. Returns a bool whether auth is required.
+func RunAuthDialog(user, pass string) (bool, string, string, error) {
+
+	if user != "" && pass != "" {
+		return false, user, pass, nil
 	}
 
-	password := ""
-	pwPrompt := &survey.Password{
-		Message: "Please type your password",
-	}
-	err = survey.AskOne(pwPrompt, &password)
-	if err != nil {
-		return "", "", err
+	if user == "" && pass == "" {
+		do := true
+		doPrompt := &survey.Confirm{
+			Message: "Does this repository require basic authentication?",
+		}
+		err := survey.AskOne(doPrompt, &do)
+		if err != nil {
+			return false, "", "", err
+		}
 	}
 
-	return username, password, nil
+	if user == "" {
+		inPrompt := &survey.Input{
+			Message: "Please type your username",
+		}
+		err := survey.AskOne(inPrompt, &user)
+		if err != nil {
+			return false, "", "", err
+		}
+	}
+
+	if pass == "" {
+		pwPrompt := &survey.Password{
+			Message: "Please type your password",
+		}
+		err := survey.AskOne(pwPrompt, &pass)
+		if err != nil {
+			return false, "", "", err
+		}
+	}
+
+	return true, user, pass, nil
 }

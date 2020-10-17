@@ -60,5 +60,4 @@ func initConfig() {
 			panic("unable to read and write config")
 		}
 	}
-
 }

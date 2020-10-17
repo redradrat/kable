@@ -25,7 +25,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var repoAuth bool
+var repoUser string
+var repoPass string
 
 // addRepoCmd represents the add command
 var addRepoCmd = &cobra.Command{
@@ -53,16 +54,17 @@ var addRepoCmd = &cobra.Command{
 		name := args[0]
 		repoUrl := args[1]
 
-		var usr *string
-		if repoAuth {
-			user, pw, err := RunAuthDialog()
+		var mods []repositories.RegistryModification
+		auth, user, pw, err := RunAuthDialog(repoUser, repoPass)
+		if err != nil {
+			PrintError("unable to display authentication dialog: %s", err)
+		}
+		if auth {
+			storemod, err := repositories.StoreRepoAuth(repoUrl, repositories.AuthPair{Username: user, Password: pw})
 			if err != nil {
-				PrintError("unable to display authentication dialog: %s", err)
-			}
-			if err := repositories.StoreRepoAuth(name, repositories.AuthPair{Username: user, Password: pw}); err != nil {
 				PrintError("unable to store authentication data: %s", err)
 			}
-			usr = &user
+			mods = append(mods, storemod)
 		}
 
 		mod := repositories.AddRepository(repositories.Repository{
@@ -71,9 +73,9 @@ var addRepoCmd = &cobra.Command{
 				URL:    repoUrl,
 				GitRef: "refs/heads/master",
 			},
-			Username: usr,
 		})
-		err := repositories.UpdateRegistry(mod)
+		mods = append(mods, mod)
+		err = repositories.UpdateRegistry(mods...)
 		if err != nil {
 			PrintError("unable to update registry: %s", err)
 		}
@@ -92,5 +94,6 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	addRepoCmd.Flags().BoolVar(&repoAuth, "auth", false, "Whether auth is required to be stored for this repo.")
+	addRepoCmd.Flags().StringVarP(&repoUser, "username", "u", "", "The username for this repository.")
+	addRepoCmd.Flags().StringVarP(&repoPass, "password", "p", "", "The password for this repository.")
 }
