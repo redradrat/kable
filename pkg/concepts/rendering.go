@@ -232,16 +232,19 @@ func renderConcept(id string, avs *RenderValues, ttype TargetType, opts RenderOp
 			return nil, errors.InvalidConceptIdentifierError
 		}
 
-		r, err := repositories.GetRepository(id)
+		ci := ConceptIdentifier(id)
+		r, err := repositories.GetRepository(ci.Repo())
 		if err != nil {
 			return nil, err
 		}
 
 		// Get the repo path
-		path, err = r.AbsolutePath()
+		repopath, err := r.AbsolutePath()
 		if err != nil {
 			return nil, err
 		}
+
+		path = filepath.Join(repopath, ci.Concept())
 
 		// Get the origin of the the concept
 		origin = &ConceptOrigin{
