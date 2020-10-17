@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	RegistryFileName = "kableconfig.json"
-	KableDirName     = ".kable"
-	CacheDirName     = "cache"
+	RegistryFileName  = "kableconfig.json"
+	RepoIndexFileName = "kable.json"
+	KableDirName      = ".kable"
+	CacheDirName      = "cache"
 )
 
 func homeDir() string {
@@ -81,8 +82,8 @@ func AddRepository(repo Repository) RegistryModification {
 		if registry.Repositories == nil {
 			registry.Repositories = Repositories{}
 		}
+		repo.URL = trimUrl(repo.URL)
 		registry.Repositories[repo.Name] = repo
-		repo.URL = strings.TrimSuffix(repo.URL, ".git")
 		return registry
 	}
 }
@@ -117,6 +118,11 @@ func writeRegistry(r RepoRegistry) error {
 	b, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return err
+	}
+	if _, err := os.Stat(KableDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(KableDir, os.ModePerm); err != nil {
+			return err
+		}
 	}
 	if err := ioutil.WriteFile(RepoRegistryPath, b, 0644); err != nil {
 		return err
@@ -213,7 +219,7 @@ func (r Repository) AbsolutePath() (string, error) {
 }
 
 func computePath(url string) string {
-	a := strings.Split(strings.TrimSuffix(url, ".git"), "/")
+	a := strings.Split(trimUrl(url), "/")
 	return filepath.Join(CacheDir, a[len(a)-1])
 }
 
@@ -229,7 +235,7 @@ func (r Repository) RepoIndex() (*RepoIndex, error) {
 		return nil, err
 	}
 
-	b, err := ioutil.ReadFile(filepath.Join(path, RegistryFileName))
+	b, err := ioutil.ReadFile(filepath.Join(path, RepoIndexFileName))
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +317,22 @@ func StoreRepoAuth(url string, pair AuthPair) (RegistryModification, error) {
 		if registry.Auths == nil {
 			registry.Auths = Auths{}
 		}
-		registry.Auths[url] = Auth{Basic: base64.StdEncoding.EncodeToString(b)}
+		registry.Auths[trimUrl(url)] = Auth{Basic: base64.StdEncoding.EncodeToString(b)}
 		return registry
 	}, nil
+}
+
+func RepoAuthExists(url string) (bool, error) {
+	reg, err := Registry()
+	if err != nil {
+		return false, err
+	}
+	if _, ok := reg.Auths[trimUrl(url)]; ok {
+		return true, nil
+	}
+	return false, nil
+}
+
+func trimUrl(url string) string {
+	return strings.TrimSuffix(url, ".git")
 }

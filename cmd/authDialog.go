@@ -8,7 +8,7 @@ import (
 func RunAuthDialog(user, pass string) (bool, string, string, error) {
 
 	if user != "" && pass != "" {
-		return false, user, pass, nil
+		return true, user, pass, nil
 	}
 
 	if user == "" && pass == "" {
@@ -19,6 +19,9 @@ func RunAuthDialog(user, pass string) (bool, string, string, error) {
 		err := survey.AskOne(doPrompt, &do)
 		if err != nil {
 			return false, "", "", err
+		}
+		if !do {
+			return false, "", "", nil
 		}
 	}
 

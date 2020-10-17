@@ -55,16 +55,22 @@ var addRepoCmd = &cobra.Command{
 		repoUrl := args[1]
 
 		var mods []repositories.RegistryModification
-		auth, user, pw, err := RunAuthDialog(repoUser, repoPass)
+		authExists, err := repositories.RepoAuthExists(repoUrl)
 		if err != nil {
-			PrintError("unable to display authentication dialog: %s", err)
+			PrintError("unable to check configured auths: %s", err)
 		}
-		if auth {
-			storemod, err := repositories.StoreRepoAuth(repoUrl, repositories.AuthPair{Username: user, Password: pw})
+		if !authExists {
+			newAuth, user, pw, err := RunAuthDialog(repoUser, repoPass)
 			if err != nil {
-				PrintError("unable to store authentication data: %s", err)
+				PrintError("unable to display authentication dialog: %s", err)
 			}
-			mods = append(mods, storemod)
+			if newAuth {
+				storemod, err := repositories.StoreRepoAuth(repoUrl, repositories.AuthPair{Username: user, Password: pw})
+				if err != nil {
+					PrintError("unable to store authentication data: %s", err)
+				}
+				mods = append(mods, storemod)
+			}
 		}
 
 		mod := repositories.AddRepository(repositories.Repository{
