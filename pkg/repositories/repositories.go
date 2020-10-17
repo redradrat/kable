@@ -82,6 +82,9 @@ func AddRepository(repo Repository) RegistryModification {
 		if registry.Repositories == nil {
 			registry.Repositories = Repositories{}
 		}
+		if repo.GitRef == "" {
+			repo.GitRef = "refs/heads/master"
+		}
 		repo.URL = trimUrl(repo.URL)
 		registry.Repositories[repo.Name] = repo
 		return registry
