@@ -27,6 +27,7 @@ import (
 
 var repoUser string
 var repoPass string
+var repoRef string
 
 // addRepoCmd represents the add command
 var addRepoCmd = &cobra.Command{
@@ -73,13 +74,16 @@ var addRepoCmd = &cobra.Command{
 			}
 		}
 
-		mod := repositories.AddRepository(repositories.Repository{
+		mod, err := repositories.AddRepository(repositories.Repository{
 			Name: name,
 			GitRepository: repositories.GitRepository{
 				URL:    repoUrl,
-				GitRef: "refs/heads/master",
+				GitRef: repoRef,
 			},
 		})
+		if err != nil {
+			PrintError("unable to add repository: %v", err)
+		}
 		mods = append(mods, mod)
 		err = repositories.UpdateRegistry(mods...)
 		if err != nil {
@@ -102,4 +106,5 @@ func init() {
 	// is called directly, e.g.:
 	addRepoCmd.Flags().StringVarP(&repoUser, "username", "u", "", "The username for this repository.")
 	addRepoCmd.Flags().StringVarP(&repoPass, "password", "p", "", "The password for this repository.")
+	addRepoCmd.Flags().StringVarP(&repoRef, "ref", "r", "", "The gitref to use for this repository.")
 }

@@ -16,7 +16,9 @@ import (
 )
 
 const (
-	ConceptFileName                               = "concept.json"
+	ConceptFileName = "concept.json"
+	// _ (underscore) is specifically not part of this list, as this will be our
+	// replacement character for forming URLs
 	ConceptIdentifierRegex                        = "^([a-z/\\-123456789]+)@([a-z]+)$"
 	ConceptStringInputType    InputTypeIdentifier = "string"
 	ConceptSelectionInputType InputTypeIdentifier = "select"
@@ -142,6 +144,10 @@ type Concept struct {
 
 type ConceptType string
 
+func (ct ConceptType) String() string {
+	return string(ct)
+}
+
 func (ct ConceptType) IsSupported() bool {
 	if ct == ConceptJsonnetType {
 		return true
@@ -159,6 +165,14 @@ type ConceptMeta struct {
 type ConceptInputs struct {
 	Mandatory map[string]InputType `json:"mandatory,omitempty"`
 	Optional  map[string]InputType `json:"optional,omitempty"`
+}
+
+func (ci ConceptInputs) All() map[string]InputType {
+	outmap := ci.Optional
+	for k, v := range ci.Mandatory {
+		outmap[k] = v
+	}
+	return outmap
 }
 
 type InputType struct {

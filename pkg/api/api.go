@@ -1,0 +1,196 @@
+package api
+
+import (
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/redradrat/kable/pkg/concepts"
+
+	"github.com/labstack/echo/v4"
+	"github.com/redradrat/kable/pkg/errors"
+	"github.com/redradrat/kable/pkg/repositories"
+)
+
+func (serv Serv) GetRepository(ctx echo.Context) error {
+	id := getRepoIdFromContext(ctx)
+	repo, err := getRepo(id)
+	if err != nil {
+		return err
+	}
+	payload := RepositoriesMapPayload{
+		id: {
+			URL:    repo.URL,
+			GitRef: repo.GitRef,
+		},
+	}
+	return ctx.JSON(http.StatusOK, payload)
+}
+
+func getRepoIdFromContext(ctx echo.Context) string {
+	return ctx.Param("id")
+}
+
+func getRepo(id string) (*repositories.Repository, error) {
+	repo, err := repositories.GetRepository(id)
+	if err != nil {
+		if err == errors.RepositoryUnknownError {
+			return nil, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("repository with id '%s' does not exist", id))
+		}
+		return nil, err
+	}
+	return &repo, nil
+}
+
+func (serv Serv) PutRepository(ctx echo.Context) error {
+	payload := new(RepositoryPayload)
+	name := ctx.Param("id")
+	if err := ctx.Bind(payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("payload is invalid"))
+	}
+	repo := repositories.Repository{
+		GitRepository: repositories.GitRepository{
+			URL:    payload.URL,
+			GitRef: payload.GitRef,
+		},
+		Name: name,
+	}
+	addMod, err := repositories.AddRepository(repo)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to add repository: %s", err))
+	}
+	if err := repositories.UpdateRegistry(addMod); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("error updating registry: %v", err))
+	}
+	return ctx.JSON(http.StatusOK, NewMessage("Successfully added repository '%s'", name))
+}
+
+func (serv Serv) GetRepositories(ctx echo.Context) error {
+	repos, err := repositories.ListRepositories()
+	if err != nil {
+		return err
+	}
+	payload := NewRepositoriesPayload()
+	for _, repo := range repos {
+		payload.Repositories[repo.Name] = RepositoryPayload{
+			URL:    repo.URL,
+			GitRef: repo.GitRef,
+		}
+	}
+	return ctx.JSON(200, payload)
+}
+
+func (serv Serv) GetConcepts(ctx echo.Context) error {
+	cpts, err := concepts.ListConcepts()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to list concepts: %v", err))
+	}
+	payload := NewConceptsPayload()
+	for _, cpt := range cpts {
+		concept, err := concepts.GetRepoConcept(cpt)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to get concept '%s': %v", cpt.String(), err))
+		}
+
+		payload.Concepts = constructPayloadFrom(cpt.String(), concept)
+	}
+	return ctx.JSON(http.StatusOK, payload)
+}
+
+func (serv Serv) GetConcept(ctx echo.Context) error {
+	id := strings.ReplaceAll(ctx.Param("id"), "_", "/")
+	if !concepts.IsValidConceptIdentifier(id) {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("given id '%s' is not a valid concept identifier ", id))
+	}
+	cpt, err := concepts.GetRepoConcept(concepts.ConceptIdentifier(id))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("concept with identifier '%s' does not exist", id))
+	}
+	payload := constructPayloadFrom(id, cpt)
+	return ctx.JSON(http.StatusOK, payload)
+}
+
+func ConceptInputsPayloadFrom(c concepts.Concept) []ConceptInputsPayload {
+	if len(c.Inputs.Mandatory) == 0 && len(c.Inputs.Optional) == 0 {
+		return nil
+	}
+	var inputs []ConceptInputsPayload
+	for id, input := range c.Inputs.Mandatory {
+		inputs = append(inputs, ConceptInputsPayload{
+			ID:        id,
+			Type:      input.Type.String(),
+			Mandatory: true,
+		})
+	}
+	for id, input := range c.Inputs.Optional {
+		inputs = append(inputs, ConceptInputsPayload{
+			ID:        id,
+			Type:      input.Type.String(),
+			Mandatory: false,
+		})
+	}
+	return inputs
+}
+
+func (serv Serv) GetRepositoryConcepts(ctx echo.Context) error {
+	id := getRepoIdFromContext(ctx)
+	_, err := getRepo(id)
+	if err != nil {
+		return err
+	}
+	cpts, err := concepts.ListConcepts()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to list concepts: %v", err))
+	}
+	payload := NewConceptsPayload()
+	for _, cpt := range cpts {
+		if cpt.Repo() != id {
+			continue
+		}
+		concept, err := concepts.GetRepoConcept(cpt)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to get concept '%s': %v", cpt.Concept(), err))
+		}
+
+		payload.Concepts[cpt.Concept()] = ConceptPayload{
+			Type: concept.Type.String(),
+			Metadata: ConceptMetadataPayload{
+				MaintainerName:  concept.Meta.Maintainer.Name,
+				MaintainerEmail: concept.Meta.Maintainer.Email,
+			},
+			Inputs: ConceptInputsPayloadFrom(*concept),
+		}
+	}
+	return ctx.JSON(http.StatusOK, payload)
+}
+
+func (serv Serv) GetRepositoryConcept(ctx echo.Context) error {
+	id := getRepoIdFromContext(ctx)
+	_, err := getRepo(id)
+	if err != nil {
+		return err
+	}
+	path := strings.ReplaceAll(ctx.Param("path"), "_", "/")
+	ci := concepts.NewConceptIdentifier(path, id)
+	cpt, err := concepts.GetRepoConcept(ci)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("concept with identifier '%s' does not exist", ci))
+	}
+	payload := constructPayloadFrom(ci.Concept(), cpt)
+	return ctx.JSON(http.StatusOK, payload)
+
+}
+
+func constructPayloadFrom(s string, cpt *concepts.Concept) ConceptsMapPayload {
+	payload := ConceptsMapPayload{
+		s: {
+			Type: cpt.Type.String(),
+			Metadata: ConceptMetadataPayload{
+				MaintainerName:  cpt.Meta.Maintainer.Name,
+				MaintainerEmail: cpt.Meta.Maintainer.Email,
+			},
+			Inputs: ConceptInputsPayloadFrom(*cpt),
+		},
+	}
+	return payload
+}

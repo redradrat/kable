@@ -3,9 +3,11 @@ package repositories
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -21,12 +23,14 @@ const (
 	RepoIndexFileName = "kable.json"
 	KableDirName      = ".kable"
 	CacheDirName      = "cache"
+	masterGitRef      = "refs/heads/master"
 )
 
 func homeDir() string {
 	out, err := os.UserHomeDir()
 	if err != nil {
-		panic(err)
+		fmt.Println("Error getting home directory:", err)
+		os.Exit(1)
 	}
 	return out
 }
@@ -40,6 +44,14 @@ type RepoRegistry struct {
 	Auths        Auths        `json:"auths,omitempty"`
 }
 
+func (registry RepoRegistry) String() string {
+	var repostrings []string
+	for name, repo := range registry.Repositories {
+		repostrings = append(repostrings, fmt.Sprintf("'%s => %s@%s'", name, repo.GitRef, repo.URL))
+	}
+	return fmt.Sprintf("Registry[Repos: %s, Auths: %s]", strings.Join(repostrings, ", "), strconv.Itoa(len(registry.Auths)))
+}
+
 type Repositories map[string]Repository
 type Auths map[string]Auth
 
@@ -51,44 +63,32 @@ func (repos Repositories) List() []Repository {
 	return out
 }
 
-func Registry() (RepoRegistry, error) {
-	file, err := ioutil.ReadFile(RepoRegistryPath)
+func Registry() (*RepoRegistry, error) {
+	store, err := GetStoreFromConfig()
 	if err != nil {
-		if os.IsNotExist(err) {
-			if err := writeRegistry(RepoRegistry{}); err != nil {
-				return RepoRegistry{}, err
-			}
-			file, err = ioutil.ReadFile(RepoRegistryPath)
-			if err != nil {
-				return RepoRegistry{}, err
-			}
-		} else {
-			return RepoRegistry{}, err
-		}
+		return nil, err
 	}
-
-	r := RepoRegistry{}
-	if err := json.Unmarshal(file, &r); err != nil {
-		return RepoRegistry{}, err
-	}
-
-	return r, nil
+	return store.ReadRegistry()
 }
 
 type RegistryModification func(RepoRegistry) RepoRegistry
 
-func AddRepository(repo Repository) RegistryModification {
-	return func(registry RepoRegistry) RepoRegistry {
+func AddRepository(repo Repository) (RegistryModification, error) {
+	if repo.URL == "" {
+		return nil, fmt.Errorf("repository must have a valid url")
+	}
+	addrepofunc := func(registry RepoRegistry) RepoRegistry {
 		if registry.Repositories == nil {
 			registry.Repositories = Repositories{}
 		}
 		if repo.GitRef == "" {
-			repo.GitRef = "refs/heads/master"
+			repo.GitRef = masterGitRef
 		}
 		repo.URL = trimUrl(repo.URL)
 		registry.Repositories[repo.Name] = repo
 		return registry
 	}
+	return addrepofunc, nil
 }
 
 func RemoveRepository(name string) RegistryModification {
@@ -102,7 +102,7 @@ func RemoveRepository(name string) RegistryModification {
 }
 
 func UpdateRegistry(updates ...RegistryModification) error {
-	registry, err := Registry()
+	registry, err := unpointerify(Registry())
 	if err != nil {
 		return err
 	}
@@ -110,26 +110,14 @@ func UpdateRegistry(updates ...RegistryModification) error {
 		registry = update(registry)
 	}
 
-	if err := writeRegistry(registry); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func writeRegistry(r RepoRegistry) error {
-	b, err := json.MarshalIndent(r, "", "  ")
+	store, err := GetStoreFromConfig()
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat(KableDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(KableDir, os.ModePerm); err != nil {
-			return err
-		}
-	}
-	if err := ioutil.WriteFile(RepoRegistryPath, b, 0644); err != nil {
+	if err := store.WriteRegistry(registry); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -139,10 +127,10 @@ type Auth struct {
 
 type Repository struct {
 	GitRepository
-	Name string
+	Name string `json:"name"`
 }
 
-func maybeDelete(path string) error {
+func safeDelete(path string) error {
 	if err := os.RemoveAll(path); err != nil {
 		if !os.IsNotExist(err) {
 			return err
@@ -151,6 +139,8 @@ func maybeDelete(path string) error {
 	return nil
 }
 
+// Clones the given repository, or, in case the repo already is checked
+// out, pulls the upstream changes.
 func maybeClone(r Repository, path string, pull bool) error {
 	reg, err := Registry()
 	if err != nil {
@@ -164,9 +154,6 @@ func maybeClone(r Repository, path string, pull bool) error {
 			return err
 		}
 		if err := json.Unmarshal(b, &pair); err != nil {
-			return err
-		}
-		if err != nil {
 			return err
 		}
 		auth = &http.BasicAuth{
@@ -251,8 +238,8 @@ func (r Repository) RepoIndex() (*RepoIndex, error) {
 }
 
 type GitRepository struct {
-	URL    string
-	GitRef string
+	URL    string `json:"url"`
+	GitRef string `json:"gitRef"`
 }
 
 func UpdateRepositories() error {
@@ -338,4 +325,9 @@ func RepoAuthExists(url string) (bool, error) {
 
 func trimUrl(url string) string {
 	return strings.TrimSuffix(url, ".git")
+}
+
+func unpointerify(i *RepoRegistry, e error) (RepoRegistry, error) {
+	x := i
+	return *x, e
 }

@@ -16,35 +16,44 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/redradrat/kable/api"
+	"fmt"
+	"strings"
+
+	"github.com/redradrat/kable/pkg/repositories"
+
+	"github.com/spf13/viper"
+
+	"github.com/redradrat/kable/pkg/api"
 	"github.com/spf13/cobra"
 )
+
+const serverAddressKey = "address"
+const serverPortKey = "port"
+const etcdEndpoints = "etcdEndpoints"
+const etcdTimeout = "etcdTimeout"
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Run kable as a server",
 	Long:  `Runs kable as a server expecting payloads via a REST interface.`,
+	Example: `kable serve --server-address 127.0.0.1 --server-port 2020
+	KABLE_SERVERADDRESS=127.0.0.1 KABLE_SERVERPORT kable serve`,
 	Run: func(cmd *cobra.Command, args []string) {
-		serv := api.Serv{}
-		e := echo.New()
-		api.RegisterHandlers(e, &serv)
-		e.Static("/", "kable.v1.yaml")
-		e.Logger.Fatal(e.Start("localhost:1323"))
+		viper.Set(repositories.StoreKey, repositories.EtcdStoreConfigMap(strings.Split(viper.GetString(etcdEndpoints), ","), viper.GetDuration(etcdTimeout)).Map())
+		api.StartUp(fmt.Sprintf("%s:%s", viper.Get(serverAddressKey), viper.Get(serverPortKey)))
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	serveCmd.Flags().StringP("server-address", "a", "0.0.0.0", "The adress to bind the server to")
+	serveCmd.Flags().StringP("server-port", "p", "1323", "The port for the kable api to listen on")
+	serveCmd.Flags().String("etcd-endpoints", "", "The etcd endpoints to use")
+	serveCmd.Flags().String("etcd-timeout", "5000", "The timeout for etcd interactions in milliseconds")
+	viper.BindPFlag(serverAddressKey, serveCmd.Flags().Lookup("server-address"))
+	viper.BindPFlag(serverPortKey, serveCmd.Flags().Lookup("server-port"))
+	viper.BindPFlag(etcdEndpoints, serveCmd.Flags().Lookup("etcd-endpoints"))
+	viper.BindPFlag(etcdTimeout, serveCmd.Flags().Lookup("etcd-timeout"))
 }
