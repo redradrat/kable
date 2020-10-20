@@ -3,19 +3,8 @@ package api
 import (
 	"fmt"
 
-	"github.com/facebookgo/grace/gracehttp"
 	"github.com/labstack/echo/v4"
 )
-
-func StartUp(bind string) {
-	serv := Serv{}
-	e := echo.New()
-	v1 := e.Group("/v1")
-	RegisterHandlersV1(v1, &serv)
-	e.Static("/", "kable.v1.yaml")
-	e.Server.Addr = bind
-	e.Logger.Fatal(gracehttp.Serve(e.Server))
-}
 
 func RegisterHandlersV1(e *echo.Group, serv *Serv) {
 	e.GET("/concepts", serv.GetConcepts)

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/labstack/gommon/log"
+
 	"github.com/redradrat/kable/pkg/concepts"
 
 	"github.com/labstack/echo/v4"
@@ -13,6 +15,16 @@ import (
 )
 
 type Serv struct{}
+
+func StartUp(bind string) {
+	serv := Serv{}
+	e := echo.New()
+	v1 := e.Group("/v1")
+	RegisterHandlersV1(v1, &serv)
+	e.Static("/", "kable.v1.yaml")
+	e.Logger = log.New("kable-server")
+	e.Logger.Fatal(e.Start(bind))
+}
 
 func (serv Serv) GetRepository(ctx echo.Context) error {
 	id := getRepoIdFromContext(ctx)
@@ -59,9 +71,11 @@ func (serv Serv) PutRepository(ctx echo.Context) error {
 	}
 	addMod, err := repositories.AddRepository(repo)
 	if err != nil {
+		ctx.Logger().Errorf("unable to add repository: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to add repository: %s", err))
 	}
 	if err := repositories.UpdateRegistry(addMod); err != nil {
+		ctx.Logger().Errorf("error updating registry: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("error updating registry: %v", err))
 	}
 	return ctx.JSON(http.StatusOK, NewMessage("Successfully added repository '%s'", name))
@@ -83,14 +97,17 @@ func (serv Serv) GetRepositories(ctx echo.Context) error {
 }
 
 func (serv Serv) GetConcepts(ctx echo.Context) error {
+	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
 	cpts, err := concepts.ListConcepts()
 	if err != nil {
+		ctx.Logger().Errorf("unable to list concepts: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to list concepts: %v", err))
 	}
 	payload := NewConceptsPayload()
 	for _, cpt := range cpts {
 		concept, err := concepts.GetRepoConcept(cpt)
 		if err != nil {
+			ctx.Logger().Errorf("unable to get concept '%s': %v", cpt.String(), err)
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to get concept '%s': %v", cpt.String(), err))
 		}
 
@@ -100,6 +117,7 @@ func (serv Serv) GetConcepts(ctx echo.Context) error {
 }
 
 func (serv Serv) GetConcept(ctx echo.Context) error {
+	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
 	id := strings.ReplaceAll(ctx.Param("id"), "_", "/")
 	if !concepts.IsValidConceptIdentifier(id) {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("given id '%s' is not a valid concept identifier ", id))
@@ -135,13 +153,16 @@ func ConceptInputsPayloadFrom(c concepts.Concept) []ConceptInputsPayload {
 }
 
 func (serv Serv) GetRepositoryConcepts(ctx echo.Context) error {
+	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
 	id := getRepoIdFromContext(ctx)
 	_, err := getRepo(id)
 	if err != nil {
+		ctx.Logger().Errorf("could not get repo: %v", err)
 		return err
 	}
 	cpts, err := concepts.ListConcepts()
 	if err != nil {
+		ctx.Logger().Errorf("unable to list concepts: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to list concepts: %v", err))
 	}
 	payload := NewConceptsPayload()
@@ -151,6 +172,7 @@ func (serv Serv) GetRepositoryConcepts(ctx echo.Context) error {
 		}
 		concept, err := concepts.GetRepoConcept(cpt)
 		if err != nil {
+			ctx.Logger().Errorf("unable to get concept '%s': %v", cpt.Concept(), err)
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to get concept '%s': %v", cpt.Concept(), err))
 		}
 
@@ -160,9 +182,11 @@ func (serv Serv) GetRepositoryConcepts(ctx echo.Context) error {
 }
 
 func (serv Serv) GetRepositoryConcept(ctx echo.Context) error {
+	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
 	id := getRepoIdFromContext(ctx)
 	_, err := getRepo(id)
 	if err != nil {
+		ctx.Logger().Errorf("could not get repo: %v", err)
 		return err
 	}
 	path := strings.ReplaceAll(ctx.Param("path"), "_", "/")

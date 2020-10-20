@@ -34,8 +34,8 @@ func TestConceptsClient_List_None(t *testing.T) {
 
 	concepts, response, err := client.Concepts.List(context.Background(), nil)
 	assert.NoError(t, err)
-	assert.Equal(t, response.StatusCode, 200)
-	assert.Equal(t, *concepts, api.NewConceptsPayload())
+	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, api.NewConceptsPayload(), *concepts)
 }
 
 func TestConceptsClient_List_Some(t *testing.T) {
@@ -49,6 +49,7 @@ func TestConceptsClient_List_Some(t *testing.T) {
 
 	concepts, response, err := client.Concepts.List(context.Background(), nil)
 	assert.NoError(t, err)
-	assert.Equal(t, response.StatusCode, 200)
-	assert.Equal(t, *concepts, api.NewConceptsPayload())
+	assert.Equal(t, 200, response.StatusCode)
+	act := api.ConceptsPayload{Concepts: api.ConceptsMapPayload{"apps/sentry@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Ralph Kühnert", MaintainerEmail: "kuehnert.ralph@gmail.com"}, Tags: map[string]string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}}}
+	assert.Equal(t, act, *concepts)
 }

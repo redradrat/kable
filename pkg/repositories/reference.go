@@ -7,8 +7,8 @@ var DemoRegistry = RepoRegistry{
 	Auths:        DemoAuths,
 }
 
-var DemoHttpsUrl = "https://github.com/redradrat/kable.git"
-var DemoSshUrl = "git@github.com:redradrat/kable.git"
+var DemoHttpsUrl = "https://github.com/redradrat/demo-concepts.git"
+var DemoSshUrl = "git@github.com:redradrat/demo-concepts.git"
 
 var DemoHttpsRepository = Repository{
 	GitRepository: GitRepository{
