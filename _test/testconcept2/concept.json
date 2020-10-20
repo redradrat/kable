@@ -1,0 +1,25 @@
+{
+	"apiVersion": 1,
+	"type": "jsonnet",
+	"metadata": {
+		"name": "testconcept2",
+		"maintainer": {
+			"name": "",
+			"email": ""
+		}
+	},
+	"inputs": {
+		"mandatory": {
+			"instanceName": {
+				"type": "string"
+			},
+			"nameSelection": {
+				"type": "select",
+				"options": [
+					"Option 1",
+					"Option 2"
+				]
+			}
+		}
+	}
+}

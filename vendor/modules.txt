@@ -19,6 +19,13 @@ github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes
 github.com/coreos/etcd/etcdserver/etcdserverpb
 github.com/coreos/etcd/mvcc/mvccpb
 github.com/coreos/etcd/pkg/types
+# github.com/coreos/go-semver v0.3.0
+## explicit
+# github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
+## explicit
+github.com/coreos/pkg/httputil
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/emirpasic/gods v1.12.0
 github.com/emirpasic/gods/containers
 github.com/emirpasic/gods/lists
@@ -26,6 +33,19 @@ github.com/emirpasic/gods/lists/arraylist
 github.com/emirpasic/gods/trees
 github.com/emirpasic/gods/trees/binaryheap
 github.com/emirpasic/gods/utils
+# github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a
+## explicit
+github.com/facebookgo/clock
+# github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
+## explicit
+github.com/facebookgo/grace/gracehttp
+github.com/facebookgo/grace/gracenet
+# github.com/facebookgo/httpdown v0.0.0-20180706035922-5979d39b15c2
+## explicit
+github.com/facebookgo/httpdown
+# github.com/facebookgo/stats v0.0.0-20151006221625-1b76add642e4
+## explicit
+github.com/facebookgo/stats
 # github.com/fatih/color v1.9.0
 ## explicit
 github.com/fatih/color
@@ -119,6 +139,9 @@ github.com/google/go-jsonnet/internal/parser
 github.com/google/go-jsonnet/internal/pass
 github.com/google/go-jsonnet/internal/program
 github.com/google/go-jsonnet/toolutils
+# github.com/google/go-querystring v1.0.0
+## explicit
+github.com/google/go-querystring/query
 # github.com/google/logger v1.1.0
 ## explicit
 github.com/google/logger
@@ -139,6 +162,10 @@ github.com/grafana/tanka/pkg/spec
 github.com/grafana/tanka/pkg/spec/v1alpha1
 github.com/grafana/tanka/pkg/tanka
 github.com/grafana/tanka/pkg/term
+# github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
+## explicit
+# github.com/grpc-ecosystem/grpc-gateway v1.9.5
+## explicit
 # github.com/hashicorp/hcl v1.0.0
 github.com/hashicorp/hcl
 github.com/hashicorp/hcl/hcl/ast
@@ -170,6 +197,8 @@ github.com/karrick/godirwalk
 github.com/kballard/go-shellquote
 # github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd
 github.com/kevinburke/ssh_config
+# github.com/kr/pty v1.1.5
+## explicit
 # github.com/labstack/echo/v4 v4.1.16
 ## explicit
 github.com/labstack/echo/v4
@@ -205,9 +234,20 @@ github.com/olekukonko/tablewriter
 github.com/pelletier/go-toml
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/prometheus/client_golang v1.0.0
+## explicit
+# github.com/prometheus/client_model v0.2.0
+## explicit
+# github.com/prometheus/procfs v0.0.11
+## explicit
 # github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
-# github.com/spf13/afero v1.1.2
+# github.com/sirupsen/logrus v1.4.2
+## explicit
+# github.com/spf13/afero v1.2.2
+## explicit
 github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/cast v1.3.1
@@ -226,6 +266,7 @@ github.com/spf13/viper
 github.com/stretchr/objx
 # github.com/stretchr/testify v1.6.1
 ## explicit
+github.com/stretchr/testify/assert
 # github.com/thoas/go-funk v0.4.0
 github.com/thoas/go-funk
 # github.com/ugorji/go v1.1.5-pre
@@ -236,6 +277,8 @@ github.com/valyala/bytebufferpool
 github.com/valyala/fasttemplate
 # github.com/xanzy/ssh-agent v0.2.1
 github.com/xanzy/ssh-agent
+# go.etcd.io/bbolt v1.3.3
+## explicit
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert

@@ -19,7 +19,7 @@ const (
 	ConceptFileName = "concept.json"
 	// _ (underscore) is specifically not part of this list, as this will be our
 	// replacement character for forming URLs
-	ConceptIdentifierRegex                        = "^([a-z/\\-123456789]+)@([a-z]+)$"
+	ConceptIdentifierRegex                        = "^([a-z/\\-123456789]+)@([a-z\\-]+)$"
 	ConceptStringInputType    InputTypeIdentifier = "string"
 	ConceptSelectionInputType InputTypeIdentifier = "select"
 	ConceptMapInputType       InputTypeIdentifier = "map"
@@ -127,7 +127,6 @@ func (ci ConceptIdentifier) Repo() string {
 	getStrings := regexp.MustCompile(ConceptIdentifierRegex).FindStringSubmatch
 	matches := getStrings(ci.String())
 	return matches[2]
-
 }
 
 func NewConceptIdentifier(path, repoid string) ConceptIdentifier {
@@ -158,8 +157,11 @@ func (ct ConceptType) IsSupported() bool {
 // ConceptMeta defines model for ConceptMeta.
 type ConceptMeta struct {
 	Name       string         `json:"name"`
+	Tags       Tags           `json:"tags,omitempty"`
 	Maintainer MaintainerInfo `json:"maintainer,omitempty"`
 }
+
+type Tags map[string]string
 
 // ConceptInputs defines model for ConceptInputs.
 type ConceptInputs struct {

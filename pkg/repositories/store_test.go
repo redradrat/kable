@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"encoding/base64"
 	"errors"
 	"os"
 	"path/filepath"
@@ -469,8 +468,8 @@ func Test_computePath(t *testing.T) {
 		args args
 		want string
 	}{
-		{name: "https", args: struct{ url string }{url: demoHttpsUrl}, want: filepath.Join(CacheDir, "demo-concepts")},
-		{name: "ssh", args: struct{ url string }{url: demoSshUrl}, want: filepath.Join(CacheDir, "demo-concepts")},
+		{name: "https", args: struct{ url string }{url: DemoHttpsUrl}, want: filepath.Join(CacheDir, "demo-concepts")},
+		{name: "ssh", args: struct{ url string }{url: DemoSshUrl}, want: filepath.Join(CacheDir, "demo-concepts")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -519,25 +518,25 @@ func Test_maybeClone(t *testing.T) {
 			path       string
 			localstore bool
 			pull       bool
-		}{r: demoHttpsRepository, path: randomPath(), localstore: false, pull: true}, wantErr: true},
+		}{r: DemoHttpsRepository, path: randomPath(), localstore: false, pull: true}, wantErr: true},
 		{name: "https", args: struct {
 			r          Repository
 			path       string
 			localstore bool
 			pull       bool
-		}{r: demoHttpsRepository, path: randomPath(), localstore: true, pull: true}, wantErr: false},
+		}{r: DemoHttpsRepository, path: randomPath(), localstore: true, pull: true}, wantErr: false},
 		{name: "ssh", args: struct {
 			r          Repository
 			path       string
 			localstore bool
 			pull       bool
-		}{r: demoSshRepository, path: randomPath(), localstore: true, pull: true}, wantErr: false},
+		}{r: DemoSshRepository, path: randomPath(), localstore: true, pull: true}, wantErr: false},
 		{name: "not allowed", args: struct {
 			r          Repository
 			path       string
 			localstore bool
 			pull       bool
-		}{r: demoHttpsRepository, path: filepath.Join("/var", random.String(24, random.Lowercase)), localstore: true, pull: true}, wantErr: true},
+		}{r: DemoHttpsRepository, path: filepath.Join("/var", random.String(24, random.Lowercase)), localstore: true, pull: true}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -636,11 +635,11 @@ func Test_unpointerify(t *testing.T) {
 		{name: "noerror", args: struct {
 			i *RepoRegistry
 			e error
-		}{i: &demoRegistry, e: nil}, want: demoRegistry, wantErr: false},
+		}{i: &DemoRegistry, e: nil}, want: DemoRegistry, wantErr: false},
 		{name: "error", args: struct {
 			i *RepoRegistry
 			e error
-		}{i: &demoRegistry, e: testPtrError}, want: demoRegistry, wantErr: true},
+		}{i: &DemoRegistry, e: testPtrError}, want: DemoRegistry, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -657,46 +656,6 @@ func Test_unpointerify(t *testing.T) {
 }
 
 var testPtrError = errors.New("test")
-
-var demoRegistry = RepoRegistry{
-	Repositories: demoRepositories,
-	Auths:        demoAuths,
-}
-
-var demoHttpsUrl = "https://github.com/redradrat/demo-concepts.git"
-var demoSshUrl = "git@github.com:redradrat/demo-concepts.git"
-
-var demoHttpsRepository = Repository{
-	GitRepository: GitRepository{
-		URL:    trimUrl(demoHttpsUrl),
-		GitRef: masterGitRef,
-	},
-	Name: "demoHttps",
-}
-
-var demoSshRepository = Repository{
-	GitRepository: GitRepository{
-		URL:    trimUrl(demoSshUrl),
-		GitRef: masterGitRef,
-	},
-	Name: "demoSsh",
-}
-
-var demoRepositories = Repositories{
-	demoHttpsRepository.Name: demoHttpsRepository,
-	demoSshRepository.Name:   demoSshRepository,
-}
-
-var demoAuths = Auths{
-	trimUrl(demoHttpsUrl): Auth{
-		Basic: base64.StdEncoding.EncodeToString([]byte(authstring)),
-	},
-}
-
-var authstring = `{
-	username: "testuser",
-	password: "testpass",
-}`
 
 func TestEtcdStore_readRegistry(t *testing.T) {
 

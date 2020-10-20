@@ -22,6 +22,7 @@ const (
 	StoreConfigKey                 = "config"
 	LocalStoreType StoreConfigType = "local"
 	EtcdStoreType  StoreConfigType = "etcd"
+	MockStoreType  StoreConfigType = "_mock"
 )
 
 type StoreConfigType string
@@ -46,6 +47,8 @@ func (cm StoreConfigMap) GetStore() (Store, error) {
 	switch cm[StoreTypeKey] {
 	case LocalStoreType.String():
 		out = LocalStore{}
+	case MockStoreType.String():
+		out = MockStore{}
 	case EtcdStoreType.String():
 		e := EtcdStore{}
 		err := mapstructure.Decode(cm[StoreConfigKey], &e)
@@ -57,6 +60,12 @@ func (cm StoreConfigMap) GetStore() (Store, error) {
 		return nil, errors.InvalidStoreType
 	}
 	return out, nil
+}
+
+func MockStoreConfigMap() StoreConfigMap {
+	out := StoreConfigMap{}
+	out[StoreTypeKey] = MockStoreType.String()
+	return out
 }
 
 func LocalStoreConfigMap() StoreConfigMap {
@@ -194,4 +203,18 @@ func (e EtcdStore) readRegistry(c *clientv3.Client) (*RepoRegistry, error) {
 	}
 
 	return &out, nil
+}
+
+var mockStoreBackend = map[string]RepoRegistry{}
+
+type MockStore struct{}
+
+func (m MockStore) WriteRegistry(registry RepoRegistry) error {
+	mockStoreBackend["registry"] = registry
+	return nil
+}
+
+func (m MockStore) ReadRegistry() (*RepoRegistry, error) {
+	reg := mockStoreBackend["registry"]
+	return &reg, nil
 }

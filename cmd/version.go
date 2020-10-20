@@ -19,15 +19,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cliVersion = "devel"
-var cliDate string
+var CliVersion = "devel"
+var CliDate string
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version information",
 	Run: func(cmd *cobra.Command, args []string) {
-		PrintMsg("kable version %s | %s", cliVersion, cliDate)
+		PrintMsg("kable version %s | %s", CliVersion, CliDate)
 	},
 }
 

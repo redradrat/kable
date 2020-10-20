@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -19,12 +20,15 @@ import (
 )
 
 const (
-	RegistryFileName  = "kableconfig.json"
-	RepoIndexFileName = "kable.json"
-	KableDirName      = ".kable"
-	CacheDirName      = "cache"
-	masterGitRef      = "refs/heads/master"
+	RegistryFileName          = "kableconfig.json"
+	RepoIndexFileName         = "kable.json"
+	KableDirName              = ".kable"
+	CacheDirName              = "cache"
+	masterGitRef              = "refs/heads/master"
+	RepositoryIdentifierRegex = "^([a-z\\-]+)$"
 )
+
+var IsValidRepositoryName = regexp.MustCompile(RepositoryIdentifierRegex).MatchString
 
 func homeDir() string {
 	out, err := os.UserHomeDir()
@@ -76,6 +80,9 @@ type RegistryModification func(RepoRegistry) RepoRegistry
 func AddRepository(repo Repository) (RegistryModification, error) {
 	if repo.URL == "" {
 		return nil, fmt.Errorf("repository must have a valid url")
+	}
+	if !IsValidRepositoryName(repo.Name) {
+		return nil, fmt.Errorf("repository name can only be lowercase letters (a-z) and '-'")
 	}
 	addrepofunc := func(registry RepoRegistry) RepoRegistry {
 		if registry.Repositories == nil {
