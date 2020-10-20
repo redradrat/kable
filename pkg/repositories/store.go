@@ -95,7 +95,14 @@ type Store interface {
 type LocalStore struct{}
 
 func (l LocalStore) WriteRegistry(registry RepoRegistry) error {
-	panic("implement me")
+	b, err := json.MarshalIndent(registry, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(RepoRegistryPath, b, 0644); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l LocalStore) ReadRegistry() (*RepoRegistry, error) {
