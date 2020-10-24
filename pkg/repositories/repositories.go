@@ -98,14 +98,18 @@ func AddRepository(repo Repository) (RegistryModification, error) {
 	return addrepofunc, nil
 }
 
-func RemoveRepository(name string) RegistryModification {
-	return func(registry RepoRegistry) RepoRegistry {
+func RemoveRepository(name string) (RegistryModification, error) {
+	if !IsValidRepositoryName(name) {
+		return nil, fmt.Errorf("repository name can only be lowercase letters (a-z) and '-'")
+	}
+	removeFunc := func(registry RepoRegistry) RepoRegistry {
 		if registry.Repositories == nil {
 			return registry
 		}
 		delete(registry.Repositories, name)
 		return registry
 	}
+	return removeFunc, nil
 }
 
 func UpdateRegistry(updates ...RegistryModification) error {

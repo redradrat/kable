@@ -38,44 +38,82 @@ func TestConceptsClient_List_None(t *testing.T) {
 	assert.Equal(t, api.NewConceptsPayload(), *concepts)
 }
 
-func TestConceptsClient_List_Some(t *testing.T) {
-	client, err := addDemoHttps(t)
+func TestConceptsClient_List_All(t *testing.T) {
+	removeMod, client, err := addDemoHttps(t)
 	assert.NoError(t, err)
 
 	concepts, response, err := client.Concepts.List(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, response.StatusCode)
-	act := api.ConceptsPayload{Concepts: api.ConceptsMapPayload{"apps/grafana@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Ralph Kühnert", MaintainerEmail: "kuehnert.ralph@gmail.com"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}, "apps/sentry@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Ralph Kühnert", MaintainerEmail: "kuehnert.ralph@gmail.com"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}}}
-	assert.Equal(t, act, *concepts)
+	exp := api.ConceptsPayload{Concepts: api.ConceptsMapPayload{"e2e-test/testconcept1@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Demo Maintainer", MaintainerEmail: "demo.maintainer@kab.le"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}, "e2e-test/testconcept2@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Demo Maintainer", MaintainerEmail: "demo.maintainer@kab.le"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}}}
+	assert.Equal(t, exp, *concepts)
+
+	assert.NoError(t, repositories.UpdateRegistry(removeMod))
 }
 
-func TestConceptsClient_ListFromRepository_Some(t *testing.T) {
-	client, err := addDemoHttps(t)
+func TestConceptsClient_ListFromRepository_All(t *testing.T) {
+	removeMod, client, err := addDemoHttps(t)
 	assert.NoError(t, err)
 
 	concepts, response, err := client.Concepts.ListFromRepository(context.Background(), repositories.DemoHttpsRepository.Name, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, response.StatusCode)
-	act := api.ConceptsPayload{Concepts: api.ConceptsMapPayload{"apps/grafana@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Ralph Kühnert", MaintainerEmail: "kuehnert.ralph@gmail.com"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}, "apps/sentry@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Ralph Kühnert", MaintainerEmail: "kuehnert.ralph@gmail.com"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}}}
-	assert.Equal(t, act, *concepts)
+	exp := api.ConceptsPayload{Concepts: api.ConceptsMapPayload{"e2e-test/testconcept1@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Demo Maintainer", MaintainerEmail: "demo.maintainer@kab.le"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}, "e2e-test/testconcept2@demo-https": api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Demo Maintainer", MaintainerEmail: "demo.maintainer@kab.le"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}}}
+	assert.Equal(t, exp, *concepts)
+
+	concepts, response, err = client.Concepts.ListFromRepository(context.Background(), "dummyname", nil)
+	assert.Error(t, err)
+	assert.Equal(t, 404, response.StatusCode)
+
+	assert.NoError(t, repositories.UpdateRegistry(removeMod))
 }
 
-func TestConceptsClient_GetFromRepository_Some(t *testing.T) {
-	client, err := addDemoHttps(t)
+func TestConceptsClient_GetFromRepository_All(t *testing.T) {
+	removeMod, client, err := addDemoHttps(t)
 	assert.NoError(t, err)
 
-	concepts, response, err := client.Concepts.GetFromRepository(context.Background(), repositories.DemoHttpsRepository.Name, "apps/sentry")
+	concepts, response, err := client.Concepts.GetFromRepository(context.Background(), repositories.DemoHttpsRepository.Name, "e2e-test/testconcept1")
 	assert.NoError(t, err)
 	assert.Equal(t, 200, response.StatusCode)
-	act := api.ConceptPayload(api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Ralph Kühnert", MaintainerEmail: "kuehnert.ralph@gmail.com"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}})
-	assert.Equal(t, act, *concepts)
+	exp := api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Demo Maintainer", MaintainerEmail: "demo.maintainer@kab.le"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}
+	assert.Equal(t, exp, *concepts)
+
+	concepts, response, err = client.Concepts.GetFromRepository(context.Background(), repositories.DemoHttpsRepository.Name, "e2e-test/testconcept")
+	assert.Error(t, err)
+	assert.Equal(t, 404, response.StatusCode)
+
+	concepts, response, err = client.Concepts.GetFromRepository(context.Background(), "dummyname", "e2e-test/testconcept1")
+	assert.Error(t, err)
+	assert.Equal(t, 404, response.StatusCode)
+
+	assert.NoError(t, repositories.UpdateRegistry(removeMod))
+}
+
+func TestConceptsClient_Get(t *testing.T) {
+	removeMod, client, err := addDemoHttps(t)
+	assert.NoError(t, err)
+
+	concepts, response, err := client.Concepts.Get(context.Background(), "e2e-test/testconcept1@demo-https")
+	assert.NoError(t, err)
+	assert.Equal(t, 200, response.StatusCode)
+	exp := api.ConceptPayload{Type: "jsonnet", Metadata: api.ConceptMetadataPayload{Maintainer: api.ConceptMaintainerPayload{MaintainerName: "Demo Maintainer", MaintainerEmail: "demo.maintainer@kab.le"}, Tags: []string(nil)}, Inputs: []api.ConceptInputsPayload{api.ConceptInputsPayload{ID: "instanceName", Type: "string", Mandatory: true}, api.ConceptInputsPayload{ID: "nameSelection", Type: "select", Mandatory: true}}}
+	assert.Equal(t, exp, *concepts)
+
+	concepts, response, err = client.Concepts.Get(context.Background(), "e2e-test/testconcept@demo-https")
+	assert.Error(t, err)
+	assert.Equal(t, 404, response.StatusCode)
+
+	concepts, response, err = client.Concepts.Get(nil, "e2e-test/testconcept@demo-https")
+	assert.Error(t, err)
+
+	assert.NoError(t, repositories.UpdateRegistry(removeMod))
 }
 
 /////////////
 // HELPERS //
 /////////////
 
-func addDemoHttps(t *testing.T) (*Client, error) {
+func addDemoHttps(t *testing.T) (repositories.RegistryModification, *Client, error) {
 	viper.Set(repositories.StoreKey, repositories.MockStoreConfigMap().Map())
 	client := NewClient(nil, &uri)
 
@@ -83,5 +121,7 @@ func addDemoHttps(t *testing.T) (*Client, error) {
 	addMod, err := repositories.AddRepository(repositories.DemoHttpsRepository)
 	assert.NoError(t, err)
 	assert.NoError(t, repositories.UpdateRegistry(addMod))
-	return client, err
+	removeMod, err := repositories.RemoveRepository(repositories.DemoHttpsRepository.Name)
+	assert.NoError(t, err)
+	return removeMod, client, err
 }

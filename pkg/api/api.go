@@ -17,6 +17,7 @@ func RegisterHandlersV1(e *echo.Group, serv *Serv) {
 	e.GET(RepositoriesApiPath, serv.GetRepositories)
 	e.GET(RepositoriesApiPath+"/:id", serv.GetRepository)
 	e.PUT(RepositoriesApiPath+"/:id", serv.PutRepository)
+	e.DELETE(RepositoriesApiPath+"/:id", serv.DeleteRepository)
 	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath, serv.GetRepositoryConcepts)
 	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath+"/:path", serv.GetRepositoryConcept)
 }

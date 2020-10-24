@@ -33,11 +33,9 @@ func (serv Serv) GetRepository(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	payload := RepositoriesMapPayload{
-		id: {
-			URL:    repo.URL,
-			GitRef: repo.GitRef,
-		},
+	payload := RepositoryPayload{
+		URL:    repo.URL,
+		GitRef: repo.GitRef,
 	}
 	return ctx.JSON(http.StatusOK, payload)
 }
@@ -79,7 +77,22 @@ func (serv Serv) PutRepository(ctx echo.Context) error {
 		ctx.Logger().Errorf("error updating registry: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("error updating registry: %v", err))
 	}
+
 	return ctx.JSON(http.StatusOK, NewMessage("Successfully added repository '%s'", name))
+}
+
+func (serv Serv) DeleteRepository(ctx echo.Context) error {
+	name := ctx.Param("id")
+	removeMod, err := repositories.RemoveRepository(name)
+	if err != nil {
+		ctx.Logger().Errorf("unable to add repository: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to remove repository: %s", err))
+	}
+	if err := repositories.UpdateRegistry(removeMod); err != nil {
+		ctx.Logger().Errorf("error updating registry: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("error updating registry: %v", err))
+	}
+	return ctx.JSON(http.StatusOK, NewMessage("Successfully removed repository '%s'", name))
 }
 
 func (serv Serv) GetRepositories(ctx echo.Context) error {

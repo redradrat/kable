@@ -45,7 +45,10 @@ var removeCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Removing repository...")
-		mod := repositories.RemoveRepository(args[0])
+		mod, err := repositories.RemoveRepository(args[0])
+		if err != nil {
+			PrintError("unable to get registry modifier: %s \n", err)
+		}
 		if err := repositories.UpdateRegistry(mod); err != nil {
 			PrintError("unable to update repository registry: %s \n", err)
 		}
