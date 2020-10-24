@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/redradrat/kable/pkg/repositories"
@@ -141,6 +142,36 @@ type Concept struct {
 	Inputs     ConceptInputs `json:"inputs,omitempty"`
 }
 
+func (c *Concept) UnmarshalJSON(bytes []byte) error {
+	type conceptCopy Concept
+	inter := conceptCopy{}
+	if err := json.Unmarshal(bytes, &inter); err != nil {
+		return err
+	}
+	sort.Strings(inter.Meta.Tags)
+	sortMapKeys(inter.Inputs.Mandatory)
+	sortMapKeys(inter.Inputs.Optional)
+
+	c.ApiVersion = inter.ApiVersion
+	c.Meta = inter.Meta
+	c.Inputs = inter.Inputs
+	c.Type = inter.Type
+
+	return nil
+}
+
+func sortMapKeys(m map[string]InputType) {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		fmt.Println(k, m[k])
+	}
+}
+
 type ConceptType string
 
 func (ct ConceptType) String() string {
@@ -161,7 +192,7 @@ type ConceptMeta struct {
 	Maintainer MaintainerInfo `json:"maintainer,omitempty"`
 }
 
-type Tags map[string]string
+type Tags []string
 
 // ConceptInputs defines model for ConceptInputs.
 type ConceptInputs struct {

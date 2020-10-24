@@ -4,8 +4,8 @@
 	"metadata": {
 		"name": "testconcept1",
 		"maintainer": {
-			"name": "",
-			"email": ""
+			"name": "Demo Maintainer",
+			"email": "demo.maintainer@kab.le"
 		}
 	},
 	"inputs": {

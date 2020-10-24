@@ -6,14 +6,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const (
+	ConceptsApiPath     = "/concepts"
+	RepositoriesApiPath = "/repositories"
+)
+
 func RegisterHandlersV1(e *echo.Group, serv *Serv) {
-	e.GET("/concepts", serv.GetConcepts)
-	e.GET("/concepts/:id", serv.GetConcept)
-	e.GET("/repositories", serv.GetRepositories)
-	e.GET("/repositories/:id", serv.GetRepository)
-	e.PUT("/repositories/:id", serv.PutRepository)
-	e.GET("/repositories/:id/concepts", serv.GetRepositoryConcepts)
-	e.GET("/repositories/:id/concepts/:path", serv.GetRepositoryConcept)
+	e.GET(ConceptsApiPath, serv.GetConcepts)
+	e.GET(ConceptsApiPath+"/:id", serv.GetConcept)
+	e.GET(RepositoriesApiPath, serv.GetRepositories)
+	e.GET(RepositoriesApiPath+"/:id", serv.GetRepository)
+	e.PUT(RepositoriesApiPath+"/:id", serv.PutRepository)
+	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath, serv.GetRepositoryConcepts)
+	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath+"/:path", serv.GetRepositoryConcept)
 }
 
 type MessagePayload struct {
@@ -57,9 +62,15 @@ type ConceptPayload struct {
 	Inputs   []ConceptInputsPayload `json:"inputs,omitempty"`
 }
 
+func NewConceptPayload() ConceptPayload {
+	return ConceptPayload{
+		Inputs: []ConceptInputsPayload{},
+	}
+}
+
 type ConceptMetadataPayload struct {
 	Maintainer ConceptMaintainerPayload `json:"maintainer,omitempty"`
-	Tags       map[string]string        `json:"tags,omitempty"`
+	Tags       []string                 `json:"tags,omitempty"`
 }
 
 type ConceptMaintainerPayload struct {
@@ -72,3 +83,9 @@ type ConceptInputsPayload struct {
 	Type      string `json:"type"`
 	Mandatory bool   `json:"mandatory"`
 }
+
+type ByID []ConceptInputsPayload
+
+func (a ByID) Len() int           { return len(a) }
+func (a ByID) Less(i, j int) bool { return a[i].ID < a[j].ID }
+func (a ByID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

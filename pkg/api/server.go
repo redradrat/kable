@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/labstack/gommon/log"
@@ -111,14 +112,14 @@ func (serv Serv) GetConcepts(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to get concept '%s': %v", cpt.String(), err))
 		}
 
-		payload.Concepts = constructPayloadFrom(cpt.String(), concept)
+		payload.Concepts[cpt.String()] = constructConceptPayloadFrom(concept)
 	}
 	return ctx.JSON(http.StatusOK, payload)
 }
 
 func (serv Serv) GetConcept(ctx echo.Context) error {
 	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
-	id := strings.ReplaceAll(ctx.Param("id"), "_", "/")
+	id := UnmarshalId(getRepoIdFromContext(ctx))
 	if !concepts.IsValidConceptIdentifier(id) {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("given id '%s' is not a valid concept identifier ", id))
 	}
@@ -126,7 +127,7 @@ func (serv Serv) GetConcept(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("concept with identifier '%s' does not exist", id))
 	}
-	payload := constructPayloadFrom(id, cpt)
+	payload := constructConceptPayloadFrom(cpt)
 	return ctx.JSON(http.StatusOK, payload)
 }
 
@@ -149,6 +150,7 @@ func ConceptInputsPayloadFrom(c concepts.Concept) []ConceptInputsPayload {
 			Mandatory: false,
 		})
 	}
+	sort.Sort(ByID(inputs))
 	return inputs
 }
 
@@ -176,14 +178,14 @@ func (serv Serv) GetRepositoryConcepts(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to get concept '%s': %v", cpt.Concept(), err))
 		}
 
-		payload.Concepts = constructPayloadFrom(cpt.Concept(), concept)
+		payload.Concepts[cpt.String()] = constructConceptPayloadFrom(concept)
 	}
 	return ctx.JSON(http.StatusOK, payload)
 }
 
 func (serv Serv) GetRepositoryConcept(ctx echo.Context) error {
 	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
-	id := getRepoIdFromContext(ctx)
+	id := UnmarshalId(getRepoIdFromContext(ctx))
 	_, err := getRepo(id)
 	if err != nil {
 		ctx.Logger().Errorf("could not get repo: %v", err)
@@ -195,23 +197,28 @@ func (serv Serv) GetRepositoryConcept(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("concept with identifier '%s' does not exist", ci))
 	}
-	payload := constructPayloadFrom(ci.Concept(), cpt)
+	payload := constructConceptPayloadFrom(cpt)
 	return ctx.JSON(http.StatusOK, payload)
 
 }
 
-func constructPayloadFrom(s string, cpt *concepts.Concept) ConceptsMapPayload {
-	payload := ConceptsMapPayload{
-		s: {
-			Type: cpt.Type.String(),
-			Metadata: ConceptMetadataPayload{
-				Tags: cpt.Meta.Tags,
-				Maintainer: ConceptMaintainerPayload{
-					MaintainerName:  cpt.Meta.Maintainer.Name,
-					MaintainerEmail: cpt.Meta.Maintainer.Email,
-				}},
-			Inputs: ConceptInputsPayloadFrom(*cpt),
-		},
+func constructConceptPayloadFrom(cpt *concepts.Concept) ConceptPayload {
+	return ConceptPayload{
+		Type: cpt.Type.String(),
+		Metadata: ConceptMetadataPayload{
+			Tags: cpt.Meta.Tags,
+			Maintainer: ConceptMaintainerPayload{
+				MaintainerName:  cpt.Meta.Maintainer.Name,
+				MaintainerEmail: cpt.Meta.Maintainer.Email,
+			}},
+		Inputs: ConceptInputsPayloadFrom(*cpt),
 	}
-	return payload
+}
+
+func UnmarshalId(id string) string {
+	return strings.ReplaceAll(id, "_", "/")
+}
+
+func MarshalId(id string) string {
+	return strings.ReplaceAll(id, "/", "_")
 }
