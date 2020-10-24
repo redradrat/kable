@@ -168,26 +168,6 @@ func TestRegistry(t *testing.T) {
 	}
 }
 
-func TestRemoveRepository(t *testing.T) {
-	type args struct {
-		name string
-	}
-	tests := []struct {
-		name string
-		args args
-		want RegistryModification
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := RemoveRepository(tt.args.name); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RemoveRepository() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestRepoAuthExists(t *testing.T) {
 	type args struct {
 		url string
@@ -468,8 +448,8 @@ func Test_computePath(t *testing.T) {
 		args args
 		want string
 	}{
-		{name: "https", args: struct{ url string }{url: DemoHttpsUrl}, want: filepath.Join(CacheDir, "demo-concepts")},
-		{name: "ssh", args: struct{ url string }{url: DemoSshUrl}, want: filepath.Join(CacheDir, "demo-concepts")},
+		{name: "https", args: struct{ url string }{url: DemoHttpsUrl}, want: filepath.Join(CacheDir, "kable")},
+		{name: "ssh", args: struct{ url string }{url: DemoSshUrl}, want: filepath.Join(CacheDir, "kable")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
