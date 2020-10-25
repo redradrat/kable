@@ -56,3 +56,12 @@ brews:
       - name: git
       - name: go-jsonnet
       - name: jsonnet-bundler
+
+    install: |
+      bin.install "kable"
+      output = Utils.popen_read("#{bin}/kable completion bash")
+      (bash_completion/"kable").write output
+      output = Utils.popen_read("#{bin}/kable completion zsh")
+      (zsh_completion/"_kable").write output
+      output = Utils.popen_read("#{bin}/kable completion fish")
+      (fish_completion/"kable.fish").write output
