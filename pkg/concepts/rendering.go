@@ -86,39 +86,10 @@ func (r Render) WriteInfo(baseDir string) error {
 
 // RenderInfoV1 defines model for RenderInfoV1.
 type RenderInfoV1 struct {
-	Version  int            `json:"version"`
-	Meta     RenderMeta     `json:"meta"`
-	Origin   *ConceptOrigin `json:"origin,omitempty"`
-	Values   *RenderValues  `json:"values,omitempty"`
-	FileTree []string       `json:"files,omitempty"`
-}
-
-func (ri *RenderInfoV1) Unmarshal(data []byte) error {
-	inter := struct {
-		Values map[string]interface{} `json:"values,omitempty"`
-	}{}
-	if err := json.Unmarshal(data, &inter); err != nil {
-		return err
-	}
-
-	newvals := RenderValues{}
-	for k, v := range inter.Values {
-		switch assertedValue := v.(type) {
-		case string:
-			newvals[k] = StringValueType(assertedValue)
-		case map[string]interface{}:
-			newvals[k] = MapValueType(assertedValue)
-		case int:
-			newvals[k] = IntValueType(assertedValue)
-		case bool:
-			newvals[k] = BoolValueType(assertedValue)
-		}
-	}
-
-	_ = json.Unmarshal(data, ri)
-	ri.Values = &newvals
-
-	return nil
+	Version int            `json:"version"`
+	Meta    RenderMeta     `json:"meta"`
+	Origin  *ConceptOrigin `json:"origin,omitempty"`
+	Values  *RenderValues  `json:"values,omitempty"`
 }
 
 func ParseRenderInfoV1FromFile(path string) (*RenderInfoV1, error) {
@@ -128,7 +99,7 @@ func ParseRenderInfoV1FromFile(path string) (*RenderInfoV1, error) {
 	}
 
 	ri := &RenderInfoV1{}
-	if err := ri.Unmarshal(f); err != nil {
+	if err := json.Unmarshal(f, &ri); err != nil {
 		return nil, err
 	}
 
@@ -143,6 +114,27 @@ type ValueType interface {
 }
 
 type RenderValues map[string]ValueType
+
+func (rv RenderValues) UnmarshalJSON(bytes []byte) error {
+	inter := map[string]interface{}{}
+	if err := json.Unmarshal(bytes, &inter); err != nil {
+		return err
+	}
+
+	for k, v := range inter {
+		switch assertedValue := v.(type) {
+		case string:
+			rv[k] = StringValueType(assertedValue)
+		case map[string]interface{}:
+			rv[k] = MapValueType(assertedValue)
+		case int:
+			rv[k] = IntValueType(assertedValue)
+		case bool:
+			rv[k] = BoolValueType(assertedValue)
+		}
+	}
+	return nil
+}
 
 func (rv RenderValues) Map() map[string]ValueType {
 	return map[string]ValueType(rv)

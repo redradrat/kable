@@ -256,6 +256,21 @@ type ConceptOrigin struct {
 	Ref        string `json:"ref"`
 }
 
+func GetConceptOriginFromRepository(repositoryName string) (*ConceptOrigin, error) {
+	r, err := repositories.GetRepository(repositoryName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the origin of the the concept
+	origin := &ConceptOrigin{
+		Repository: r.URL,
+		Ref:        r.GitRef,
+	}
+
+	return origin, nil
+}
+
 type ConceptRepoInfo struct {
 	Concept string
 	Path    string

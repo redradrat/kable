@@ -3,24 +3,8 @@ package api
 import (
 	"fmt"
 
-	"github.com/labstack/echo/v4"
+	"github.com/redradrat/kable/pkg/concepts"
 )
-
-const (
-	ConceptsApiPath     = "/concepts"
-	RepositoriesApiPath = "/repositories"
-)
-
-func RegisterHandlersV1(e *echo.Group, serv *Serv) {
-	e.GET(ConceptsApiPath, serv.GetConcepts)
-	e.GET(ConceptsApiPath+"/:id", serv.GetConcept)
-	e.GET(RepositoriesApiPath, serv.GetRepositories)
-	e.GET(RepositoriesApiPath+"/:id", serv.GetRepository)
-	e.PUT(RepositoriesApiPath+"/:id", serv.PutRepository)
-	e.DELETE(RepositoriesApiPath+"/:id", serv.DeleteRepository)
-	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath, serv.GetRepositoryConcepts)
-	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath+"/:path", serv.GetRepositoryConcept)
-}
 
 type MessagePayload struct {
 	Message string `json:"message"`
@@ -83,6 +67,18 @@ type ConceptInputsPayload struct {
 	ID        string `json:"id"`
 	Type      string `json:"type"`
 	Mandatory bool   `json:"mandatory"`
+}
+
+type RenderConceptInputPayload struct {
+	TargetType     string                 `json:"type"`
+	SingleManifest bool                   `json:"singleManifest"`
+	Values         *concepts.RenderValues `json:"values"`
+}
+
+type RenderConceptResultPayload struct {
+	Manifests     []string                `json:"manifests"`
+	ManifestCount int                     `json:"manifestCount"`
+	Origin        *concepts.ConceptOrigin `json:"origin"`
 }
 
 type ByID []ConceptInputsPayload

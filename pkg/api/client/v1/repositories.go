@@ -12,8 +12,8 @@ import (
 const repositoriessBasePath = "v1/repositories"
 
 type RepositoriesService interface {
-	List(ctx context.Context, options *ListOptions) (*api.RepositoriesPayload, *Response, error)
 	Get(ctx context.Context, name string) (*api.RepositoryPayload, *Response, error)
+	List(ctx context.Context, options *ListOptions) (*api.RepositoriesPayload, *Response, error)
 	Put(ctx context.Context, name, giturl, gitref string) (*Response, error)
 	Delete(ctx context.Context, name string) (*Response, error)
 }

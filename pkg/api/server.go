@@ -15,6 +15,11 @@ import (
 	"github.com/redradrat/kable/pkg/repositories"
 )
 
+const (
+	ConceptsApiPath     = "/concepts"
+	RepositoriesApiPath = "/repositories"
+)
+
 type Serv struct{}
 
 func StartUp(bind string) {
@@ -25,6 +30,19 @@ func StartUp(bind string) {
 	e.Static("/", "kable.v1.yaml")
 	e.Logger = log.New("kable-server")
 	e.Logger.Fatal(e.Start(bind))
+}
+
+func RegisterHandlersV1(e *echo.Group, serv *Serv) {
+	e.GET(ConceptsApiPath, serv.GetConcepts)
+	e.GET(ConceptsApiPath+"/:id", serv.GetConcept)
+	e.GET(ConceptsApiPath+"/:id/render", serv.RenderConcept)
+	e.GET(RepositoriesApiPath, serv.GetRepositories)
+	e.GET(RepositoriesApiPath+"/:id", serv.GetRepository)
+	e.PUT(RepositoriesApiPath+"/:id", serv.PutRepository)
+	e.DELETE(RepositoriesApiPath+"/:id", serv.DeleteRepository)
+	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath, serv.GetRepositoryConcepts)
+	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath+"/:path", serv.GetRepositoryConcept)
+	e.GET(RepositoriesApiPath+"/:id"+ConceptsApiPath+"/:path/render", serv.RenderRepositoryConcept)
 }
 
 func (serv Serv) GetRepository(ctx echo.Context) error {
@@ -136,11 +154,10 @@ func (serv Serv) GetConcept(ctx echo.Context) error {
 	if !concepts.IsValidConceptIdentifier(id) {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("given id '%s' is not a valid concept identifier ", id))
 	}
-	cpt, err := concepts.GetRepoConcept(concepts.ConceptIdentifier(id))
+	payload, err := constructConceptPayloadFromCI(concepts.ConceptIdentifier(id))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("concept with identifier '%s' does not exist", id))
+		return err
 	}
-	payload := constructConceptPayloadFrom(cpt)
 	return ctx.JSON(http.StatusOK, payload)
 }
 
@@ -198,21 +215,116 @@ func (serv Serv) GetRepositoryConcepts(ctx echo.Context) error {
 
 func (serv Serv) GetRepositoryConcept(ctx echo.Context) error {
 	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
+	ci, err := getRepositoryConceptIdentifierFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	payload, err := constructConceptPayloadFromCI(*ci)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, payload)
+}
+
+func (serv Serv) RenderConcept(ctx echo.Context) error {
+	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
+	inPayload := new(RenderConceptInputPayload)
+	if err := ctx.Bind(inPayload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("inPayload is invalid"))
+	}
+	ci, err := getConceptIdentifierFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	respPayload, err := renderConcept(*ci, inPayload)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, respPayload)
+}
+
+func (serv Serv) RenderRepositoryConcept(ctx echo.Context) error {
+	ctx.Logger().Infof("'%s' hit by user-agent => %s [%s]", ctx.Path(), ctx.Request().UserAgent(), ctx.RealIP())
+	inPayload := new(RenderConceptInputPayload)
+	if err := ctx.Bind(inPayload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("inPayload is invalid"))
+	}
+	ci, err := getRepositoryConceptIdentifierFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	respPayload, err := renderConcept(*ci, inPayload)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, respPayload)
+}
+
+func renderConcept(ci concepts.ConceptIdentifier, inPayload *RenderConceptInputPayload) (RenderConceptResultPayload, error) {
+	rdr, err := concepts.RenderConcept(ci.String(), inPayload.Values, concepts.TargetType(inPayload.TargetType), concepts.RenderOpts{
+		Local:           false,
+		WriteRenderInfo: true,
+		Single:          inPayload.SingleManifest,
+	})
+	if err != nil {
+		return RenderConceptResultPayload{}, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("could not render values with given input: %v", err))
+	}
+
+	var manifests []string
+	manifestCount := len(rdr.Files)
+	for _, file := range rdr.Files {
+		manifests = append(manifests, file.String())
+	}
+
+	origin, err := concepts.GetConceptOriginFromRepository(ci.Repo())
+	if err != nil {
+		return RenderConceptResultPayload{}, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("could not compute origin of concept: %v", err))
+	}
+
+	respPayload := RenderConceptResultPayload{
+		Manifests:     manifests,
+		ManifestCount: manifestCount,
+		Origin:        origin,
+	}
+	return respPayload, nil
+}
+
+func constructConceptPayloadFromCI(id concepts.ConceptIdentifier) (ConceptPayload, error) {
+	cpt, err := concepts.GetRepoConcept(id)
+	if err != nil {
+		return ConceptPayload{}, echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("concept with identifier '%s' does not exist", id))
+	}
+	payload := constructConceptPayloadFrom(cpt)
+	return payload, nil
+}
+
+func getConceptIdentifierFromContext(ctx echo.Context) (*concepts.ConceptIdentifier, error) {
+	id := UnmarshalId(ctx.Param("id"))
+	var cid *concepts.ConceptIdentifier
+	if !concepts.IsValidConceptIdentifier(id) {
+		tempCid := concepts.ConceptIdentifier(id)
+		cid = &tempCid
+	} else {
+		return nil, fmt.Errorf("given concept identifier '%s' is invalid", id)
+	}
+
+	return cid, nil
+}
+
+func getRepositoryConceptIdentifierFromContext(ctx echo.Context) (*concepts.ConceptIdentifier, error) {
 	id := UnmarshalId(getRepoIdFromContext(ctx))
 	_, err := getRepo(id)
 	if err != nil {
 		ctx.Logger().Errorf("could not get repo: %v", err)
-		return err
+		return nil, err
 	}
 	path := strings.ReplaceAll(ctx.Param("path"), "_", "/")
 	ci := concepts.NewConceptIdentifier(path, id)
-	cpt, err := concepts.GetRepoConcept(ci)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("concept with identifier '%s' does not exist", ci))
-	}
-	payload := constructConceptPayloadFrom(cpt)
-	return ctx.JSON(http.StatusOK, payload)
-
+	return &ci, nil
 }
 
 func constructConceptPayloadFrom(cpt *concepts.Concept) ConceptPayload {
