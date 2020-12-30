@@ -1,0 +1,32 @@
+doctype html
+html.has-navbar-fixed-top
+    head
+        title Kable
+        meta(charset='utf-8')
+        meta(name='viewport' content='width=device-width, initial-scale=1')
+        link(rel='stylesheet' href='css/main.css')
+        block scripts
+            script(defer src='https://use.fontawesome.com/releases/v5.14.0/js/all.js')
+            script(defer src='https://unpkg.com/stimulus/dist/stimulus.umd.js')
+            script
+                include js/hamburger.js
+                include js/mobsearch.js
+    body.has-background-white-bis
+        include topnav.pug
+        .columns.is-fullheight.is-gapless
+            .column.sidenav.is-hidden-touch
+                include sidenav.pug
+            .column
+                .breadcrumb-container
+                    #breads.is-horizontal.is-breadcrumb-padding
+                        nav.breadcrumb.is-small
+                            ul
+                                li
+                                    a(href="index.html")
+                                        span.icon
+                                            i.fas.fa-home
+                                        span Home
+                                block breadcrumb
+                .section.main-content
+                    .container
+                        block content

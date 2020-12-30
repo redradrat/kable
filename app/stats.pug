@@ -1,0 +1,27 @@
+extends layout
+
+mixin card(header, content)
+        .card
+            .card-header
+                p.card-header-title #{header}
+            .card-content
+                .content #{content}
+
+block append breadcrumb
+    li
+        a
+            span.icon
+                i.fas.fa-chart-bar
+            span  Statistics
+
+block content
+    .box
+        h1.title Hey, there!
+        p
+            | Of course, this is not ok. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam semper diam at erat pulvinar, at pulvinar felis blandit. Vestibulum volutpat tellus diam, consequat gravida libero rhoncus ut. Morbi maximus, leo sit amet vehicula eleifend, nunc dui porta orci, quis semper odio felis ut quam.
+        br
+        h2.title.is-4 Getting Started
+        p
+            | Using the official documentation
+            a(href="https://github.com/redradrat/kable#getting-started")  here
+            |  you can find most resources available.

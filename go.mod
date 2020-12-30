@@ -4,12 +4,13 @@ go 1.14
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.1.1
-	github.com/coreos/etcd v3.3.10+incompatible
-	github.com/coreos/go-semver v0.3.0 // indirect
+	github.com/coreos/etcd v3.3.13+incompatible
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 	github.com/fatih/color v1.9.0
 	github.com/fatih/structs v1.1.0
 	github.com/go-git/go-git/v5 v5.1.0
+	github.com/gofiber/fiber/v2 v2.3.0
+	github.com/gofiber/template v1.6.6
 	github.com/google/go-querystring v1.0.0
 	github.com/google/logger v1.1.0
 	github.com/grafana/tanka v0.12.0
@@ -25,12 +26,11 @@ require (
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.0.11 // indirect
-	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v1.0.0
-	github.com/spf13/viper v1.4.0
+	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
-	github.com/ugorji/go v1.1.5-pre // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
-	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
+
+replace github.com/Joker/jade v1.0.0 => github.com/Joker/jade v1.0.1-0.20200506134858-ee26e3c533bb

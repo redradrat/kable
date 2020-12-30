@@ -1,0 +1,24 @@
+nav.navbar.is-fixed-top(role='navigation' aria-label='main navigation')
+    .navbar-brand
+        #toplogo
+            a(href="#")
+                img(src="img/kable-logo.png")
+        .brand-icons.level.is-mobile
+            a.navbar-burger.burger(role='button' data-target="dropMenu" aria-label='menu' aria-expanded='false')
+                span(aria-hidden='true')
+                span(aria-hidden='true')
+                span(aria-hidden='true')
+    #searchMenu.navbar-menu
+        .navbar-start
+            .navbar-item.has-dropdown
+                .navbar-dropdown
+        .navbar-end
+    #dropMenu.navbar-menu
+        .navbar-start
+            .navbar-item.has-dropdown
+                .navbar-dropdown
+                    .embedded-search
+                        include search.pug
+                    hr.dropdown-divider
+                    include menu.pug
+        .navbar-end

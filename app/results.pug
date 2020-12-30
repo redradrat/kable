@@ -1,0 +1,103 @@
+extends layout
+
+mixin card(header, content)
+        .card
+            .card-header
+                p.card-header-title #{header}
+            .card-content
+                .content #{content}
+
+block append breadcrumb
+    li
+        a
+            span.icon
+                i.fas.fa-search
+            span  Search
+
+block content
+    - var concepts = [ { name: "Memcached",type: "helm", version: "2.3.1", maintainer: "Unknown"} ]
+    - var repos = [ {name: "Elkoss Combine", private: true, url: "https://github.com/elkcom/concepts", ref: "refs/heads/master"} ];
+    .container
+        #result-head.container.mb-4
+            .subtitle Search Results for
+                span.is-italic  "Unknown"
+            //span.tag.is-success.is-light.mr-2
+            //    .icon
+            //        .fa.fa-lock
+            //    span Private
+            //span.tag.is-white.mr-2
+            //    .icon
+            //        .fa.fa-lock-open
+            //    span Public
+        .result-section.container.mb-4
+            .subtitle.mb-1.is-size-6 Concepts
+            hr.m-0
+        .result-grid
+            each val, index in concepts
+                .card-entry
+                    .card-shields
+                        span.card-shield.is-info.is-light
+                            .icon
+                                .fa.fa-code-branch
+                            | #{val.version}
+                    .card-content
+                        .title.is-size-4 #{val.name}
+                        .content.is-size-7
+                            p
+                                | This is a demo description, that is not dynamic at all. Good thing about it is, that
+                                | one can easily measure spacing and typography this way.
+                            .tile.is-horizontal
+                                .tile.is-child
+                                    .block
+                                        strong Maintainer
+                                        p #{val.maintainer}
+                                .tile.is-child
+                                    .block
+                                        strong Type
+                                        p #{val.type}
+                    footer.card-footer
+                        a.card-footer-item.has.has-text-black
+                            | Details
+        .result-section.mt-6.mb-4
+            .subtitle.mb-1.is-size-6 Repositories
+            hr.m-0
+        .result-grid
+            each val, index in repos
+                .card-entry
+                    if val.private
+                        .card-shields
+                            span.card-shield.is-success.is-light
+                                .icon
+                                    .fa.fa-lock
+                    else
+                        .card-shields
+                            span.card-shield
+                                .icon
+                                    .fa.fa-lock-open
+                    .card-content
+                        .title.is-size-4 #{val.name}
+                        .content.is-size-7
+                            p
+                                | This is a demo description, that is not dynamic at all. Good thing about it is, that
+                                | one can easily measure spacing and typography this way.
+                            .tile.is-horizontal
+                                if val.maintainer
+                                    .tile.is-child
+                                        .block
+                                            strong Maintainer
+                                            p #{val.maintainer}
+                                .tile.is-child
+                                    .block
+                                        strong Reference
+                                        p #{val.ref}
+                            .tile.is-horizontal
+                                .tile.is-child
+                                    .block
+                                        strong URL
+                                        p #{val.url}
+                    footer.card-footer
+                        a.card-footer-item.has.has-text-black
+                            | Browse
+                        a.card-footer-item.has-text-danger
+                            | Delete
+

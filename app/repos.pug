@@ -1,0 +1,82 @@
+extends layout
+
+
+block append scripts
+    script(defer src='https://use.fontawesome.com/releases/v5.14.0/js/all.js')
+
+block append breadcrumb
+    li
+        a
+            span.icon
+                i.fas.fa-bookmark
+            span  Repositories
+
+
+block content
+    - var privrepos = 1
+    - var pubrepos = 3
+    - var repos = [ {name: "Elkoss Combine", private: true, url: "https://github.com/elkcom/concepts", ref: "refs/heads/master"}, {name: "Aldrin Labs", url: "https://github.com/aldrinlabs/infrastructure", ref: "refs/heads/master"} , {name: "Serrice Council", url: "https://github.com/serrice/concepts", ref: "refs/heads/master"} , {name: "Hahne Kedar", url: "https://github.com/hkmanufacturing/infra", ref: "refs/heads/master"} ];
+    .box
+        nav.level.is-mobile
+            .level-item.has-text-centered
+                div
+                    p.heading Repositories
+                    p.title #{repos.length}
+            .level-item.has-text-centered
+                div
+                    p.heading Public
+                    p.title #{pubrepos}
+            .level-item.has-text-centered
+                div
+                    p.heading Private
+                    p.title #{privrepos}
+    .container
+        .result-head.mb-4
+            .subtitle.mb-1 Repositories
+            span.tag.is-success.is-light.mr-2
+                .icon
+                    .fa.fa-lock
+                span Private
+            span.tag.is-white.mr-2
+                .icon
+                    .fa.fa-lock-open
+                span Public
+        .result-grid
+            each val, index in repos
+                .card-entry
+                    if val.private
+                        .card-shields
+                            span.card-shield.is-success.is-light
+                                .icon
+                                    .fa.fa-lock
+                    else
+                        .card-shields
+                            span.card-shield
+                                .icon
+                                    .fa.fa-lock-open
+                    .card-content
+                        .title.is-size-4 #{val.name}
+                        .content.is-size-7
+                            p
+                                | This is a demo description, that is not dynamic at all. Good thing about it is, that
+                                | one can easily measure spacing and typography this way.
+                            .tile.is-horizontal
+                                if val.maintainer
+                                    .tile.is-child
+                                        .block
+                                            strong Maintainer
+                                            p #{val.maintainer}
+                                .tile.is-child
+                                    .block
+                                        strong Reference
+                                        p #{val.ref}
+                            .tile.is-horizontal
+                                .tile.is-child
+                                    .block
+                                        strong URL
+                                        p #{val.url}
+                    footer.card-footer
+                        a.card-footer-item.has.has-text-black
+                            | Browse
+                        a.card-footer-item.has-text-danger
+                            | Delete
