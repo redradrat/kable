@@ -1,18 +1,14 @@
-extends layout
+extends layout.pug
 
-mixin card(header, content)
-        .card
-            .card-header
-                p.card-header-title #{header}
-            .card-content
-                .content #{content}
+block title
+    title Kable - Kubernetes Dashboard
 
 block append breadcrumb
     li
-        a
+        a(href="stats")
             span.icon
                 i.fas.fa-dharmachakra
-            span  Kubernetes Apps
+            span  Kubernetes
 
 block content
     .box

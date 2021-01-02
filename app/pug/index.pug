@@ -1,11 +1,7 @@
-extends layout
+extends layout.pug
 
-mixin card($header, $content)
-        .card
-            .card-header
-                p.card-header-title #{$header}
-            .card-content
-                .content #{$content}
+block title
+    title Kable - Dashboard
 
 block content
     .tile.is-ancestor
@@ -39,4 +35,4 @@ block content
             .tile.is-child.box.has-background-success
                 .box.has-background-success-light
                     p.title.is-4 Kubernetes
-                    p.has-text-centered.title.is-1 Active
+                    p.has-text-centered.title.is-1.is-family-monospace Active

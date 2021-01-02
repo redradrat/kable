@@ -1,0 +1,18 @@
+{
+    "/dist/public/js/hamburger.js": "/dist/public/js/hamburger.js",
+    "/dist/public/css/main.css": "/dist/public/css/main.css",
+    "/dist/public/img/kable-logo-inv.png": "/dist/public/img/kable-logo-inv.png",
+    "/dist/public/img/kable-logo.png": "/dist/public/img/kable-logo.png",
+    "/dist/pug/concepts.pug": "/dist/pug/concepts.pug",
+    "/dist/pug/footer.pug": "/dist/pug/footer.pug",
+    "/dist/pug/index.pug": "/dist/pug/index.pug",
+    "/dist/pug/kubeapps.pug": "/dist/pug/kubeapps.pug",
+    "/dist/pug/layout.pug": "/dist/pug/layout.pug",
+    "/dist/pug/menu.pug": "/dist/pug/menu.pug",
+    "/dist/pug/repos.pug": "/dist/pug/repos.pug",
+    "/dist/pug/results.pug": "/dist/pug/results.pug",
+    "/dist/pug/search.pug": "/dist/pug/search.pug",
+    "/dist/pug/sidenav.pug": "/dist/pug/sidenav.pug",
+    "/dist/pug/stats.pug": "/dist/pug/stats.pug",
+    "/dist/pug/topnav.pug": "/dist/pug/topnav.pug"
+}

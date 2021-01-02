@@ -1,0 +1,43 @@
+@import "base.css";
+@import "sidenav";
+
+.brand-icons {
+  margin-left: auto;
+  max-height: $navbar-height;
+}
+
+.embedded-search {
+  input {
+    @extend .is-rounded;
+  }
+  margin: 0 1.5rem;
+}
+
+.navbar {
+  background-color: $primary;
+}
+
+.navbar-burger span {
+  color: $primary-light;
+}
+
+.navbar-dropdown {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.navbar-dropdown .navbar-label {
+  padding-left: 1rem;
+}
+
+#toplogo {
+  width: $sidebar-width;
+  height: $navbar-height;
+
+  img {
+    display: flex;
+    justify-content: center;
+    height: 32px;
+    margin: 10px 10px 10px 1.5rem;
+  }
+}

@@ -1,15 +1,11 @@
-extends layout
+extends layout.pug
 
-mixin card(header, content)
-        .card
-            .card-header
-                p.card-header-title #{header}
-            .card-content
-                .content #{content}
+block title
+    title Kable - Search Result
 
 block append breadcrumb
     li
-        a
+        a(href="results")
             span.icon
                 i.fas.fa-search
             span  Search
@@ -96,7 +92,7 @@ block content
                                         strong URL
                                         p #{val.url}
                     footer.card-footer
-                        a.card-footer-item.has.has-text-black
+                        a.card-footer-item
                             | Browse
                         a.card-footer-item.has-text-danger
                             | Delete

@@ -9,7 +9,7 @@ import (
 )
 
 func GetMain(ctx *fiber.Ctx) error {
-	return ctx.Render("main", nil)
+	return ctx.Render("index", nil)
 }
 
 func StartUp(bind string) error {
@@ -21,7 +21,7 @@ func StartUp(bind string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.Chdir("./public"); err != nil {
+	if err := os.Chdir("./app"); err != nil {
 		return err
 	}
 
@@ -50,6 +50,7 @@ func AttachRoutes(app *fiber.App) {
 
 // AttachStaticRoutes defines all resource or static paths for this App
 func AttachStaticRoutes(app *fiber.App, origWd string) {
-	app.Static("/css", path.Join(origWd, "public/css"))
-	app.Static("/img", path.Join(origWd, "public/img"))
+	app.Static("/css", path.Join(origWd, "app/css"))
+	app.Static("/img", path.Join(origWd, "app/img"))
+	app.Static("/js", path.Join(origWd, "app/js"))
 }

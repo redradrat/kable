@@ -1,0 +1,49 @@
+@charset "utf-8";
+
+// Import a Google Font
+@import url('https://fonts.googleapis.com/css?family=DM+Sans:400,700');
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,700');
+@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700');
+@import url('https://fonts.googleapis.com/css?family=Rubik:400,700');
+
+@import "base";
+@import "cards";
+@import "breadcrumb";
+@import "navbar";
+@import "sidenav";
+
+.turbo-progress-bar {
+  height: 3px;
+  background-color: $primary-light;
+}
+
+.footer {
+  padding: 1rem 1rem 1rem;
+}
+
+.main-content {
+  padding: 1.5rem;
+  margin-top: $breadcrumb-height;
+}
+
+$result-entry-size: 16rem;
+
+.is-fullheight {
+  @include from($tablet);
+  max-height: calc(100vh - #{$navbar-height});
+  min-height: calc(100vh - #{$navbar-height});
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  .column {
+    overflow-y: auto;
+  }
+}
+
+.result-grid {
+  justify-items: center;
+  display: grid;
+  //grid-template-columns: repeat(auto-fit, minmax($result-entry-size, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax($result-entry-size, 1fr));
+  grid-gap: 1.5em;
+}

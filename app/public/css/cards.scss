@@ -1,0 +1,42 @@
+.card-shields {
+  text-align: right;
+  width: 100%;
+  position: absolute;
+  padding: 0.5rem;
+}
+
+.card-shield {
+  @extend .tag;
+  margin-left: 0.5rem;
+}
+
+
+.card-entry {
+  @extend .card;
+  max-height: 19rem;
+
+  a {
+    user-select: none;
+  }
+
+  a {
+    color: $black-bis;
+  }
+
+  a.card-footer-item:hover {
+    background-color: $white-bis;
+  }
+
+  a.card-footer-item:active {
+    background-color: $white-ter;
+  }
+
+  a.card-footer-item.danger {
+    color: $danger;
+  }
+
+  a.card-footer-item.danger:hover {
+    color: $white;
+    background-color: $danger;
+  }
+}
