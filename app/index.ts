@@ -4,7 +4,7 @@ import express from "express";
 const app = express();
 const PORT = 8000;
 app.set('view engine', 'pug')
-app.set('views', './pug')
+app.set('views', './views')
 
 serveStatics(app)
 servePages(app)
