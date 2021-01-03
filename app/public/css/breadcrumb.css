@@ -1,10 +1,9 @@
-/* Error: The target selector was not found.
- * Use "@extend .card !optional" to avoid this error.
- *    ,
- * 15 |   @extend .card;
- *    |   ^^^^^^^^^^^^^
- *    '
- *   breadcrumb.scss 15:3  root stylesheet */
+/* Error: Undefined variable.
+ *   ,
+ * 9 |   box-shadow: 15px 1em 1em -0.125em rgba($scheme-invert, 0.05), 0 0px 0 0px rgba($scheme-invert, 0.02);
+ *   |                                          ^^^^^^^^^^^^^^
+ *   '
+ *   breadcrumb.scss 9:42  root stylesheet */
 
 body::before {
   font-family: "Source Code Pro", "SF Mono", Monaco, Inconsolata, "Fira Mono",
@@ -14,5 +13,5 @@ body::before {
   padding: 1em;
   margin-bottom: 1em;
   border-bottom: 2px solid black;
-  content: 'Error: The target selector was not found.\aUse "@extend .card !optional" to avoid this error.\a    \2577 \a 15 \2502    @extend .card;\a    \2502    ^^^^^^^^^^^^^\a    \2575 \a   breadcrumb.scss 15:3  root stylesheet';
+  content: "Error: Undefined variable.\a   \2577 \a 9 \2502    box-shadow: 15px 1em 1em -0.125em rgba($scheme-invert, 0.05), 0 0px 0 0px rgba($scheme-invert, 0.02);\a   \2502                                           ^^^^^^^^^^^^^^\a   \2575 \a   breadcrumb.scss 9:42  root stylesheet";
 }

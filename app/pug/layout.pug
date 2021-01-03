@@ -4,21 +4,21 @@ html.has-navbar-fixed-top
         block title
         meta(charset='utf-8')
         meta(name='viewport' content='width=device-width, initial-scale=1')
-        link(rel='stylesheet' href='css/main.css')
+        link(rel='stylesheet' href='/css/main.css')
         block scripts
             script(defer src='https://use.fontawesome.com/releases/v5.14.0/js/all.js')
             script(defer src='https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.0.0-beta.1/dist/turbo.es5-umd.js')
             script(defer src='https://cdn.jsdelivr.net/npm/stimulus@2.0.0/dist/stimulus.umd.js')
-            script(src='js/hamburger.js')
+            script(src='/js/hamburger.js')
     body.has-background-white-bis
         include topnav
         .columns.is-fullheight.is-gapless
             .column.sidenav.is-hidden-touch
                 include sidenav
             .column
-                .breadcrumb-container
-                    #breads.is-horizontal.is-breadcrumb-padding
-                        nav.breadcrumb.is-small
+                .breadcrumb-container.is-horizontal.is-breadcrumb-padding
+                    nav#breads
+                        .breadcrumb.is-small
                             ul
                                 li
                                     a(href="/")

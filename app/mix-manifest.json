@@ -3,6 +3,7 @@
     "/dist/public/css/main.css": "/dist/public/css/main.css",
     "/dist/public/img/kable-logo-inv.png": "/dist/public/img/kable-logo-inv.png",
     "/dist/public/img/kable-logo.png": "/dist/public/img/kable-logo.png",
+    "/dist/pug/concept-details.pug": "/dist/pug/concept-details.pug",
     "/dist/pug/concepts.pug": "/dist/pug/concepts.pug",
     "/dist/pug/footer.pug": "/dist/pug/footer.pug",
     "/dist/pug/index.pug": "/dist/pug/index.pug",
@@ -14,5 +15,6 @@
     "/dist/pug/search.pug": "/dist/pug/search.pug",
     "/dist/pug/sidenav.pug": "/dist/pug/sidenav.pug",
     "/dist/pug/stats.pug": "/dist/pug/stats.pug",
-    "/dist/pug/topnav.pug": "/dist/pug/topnav.pug"
+    "/dist/pug/topnav.pug": "/dist/pug/topnav.pug",
+    "/dist/package.json": "/dist/package.json"
 }

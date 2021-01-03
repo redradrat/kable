@@ -56,16 +56,18 @@ function servePages(app: express.Express) {
 
     app.get('/concepts', function (req, res) {
         let concepts = [{
+            id: "storage_postgresql@elkcom",
             name: "PostgreSQL",
             type: "jsonnet",
             version: "1.1.0-beta4",
             maintainer: "Michele Tarantino"
-        }, {name: "MySQL", type: "jsonnet", version: "1.0.0", maintainer: "Trostan Mírsson"}, {
+        }, {id: "storage_mysql@elkcom", name: "MySQL", type: "jsonnet", version: "1.0.0", maintainer: "Trostan Mírsson"}, {
+            id: "storage_redis@elkcom",
             name: "Redis",
             type: "jsonnet",
             version: "1.3.0",
             maintainer: "Mateo Valdueza"
-        }, {name: "Memcached", type: "helm", version: "2.3.1", maintainer: "Unknown"}]
+        }, {id: "storage_memcached@aldrinlabs", name: "Memcached", type: "helm", version: "2.3.1", maintainer: "Unknown"}]
 
         let stableconcepts = 2
         let betaconcepts = 1
@@ -76,6 +78,48 @@ function servePages(app: express.Express) {
             stableconcepts: stableconcepts,
             betaconcepts,
             alphaconcepts: alphaconcepts
+        })
+    })
+
+    app.get('/concepts/:conceptid', function (req, res) {
+        let cname = req.params.conceptid
+
+        let concept = {
+            displayName: "PostgreSQL",
+            maintainer: {
+                name: "Ralph Kühnert",
+                email: "kuehnert.ralph@gmail.com"
+            },
+            version: "1.1.0-beta4",
+            type: "helm",
+            inputs: {
+                mandatory: {
+                    dbname: {
+                        type: "string"
+                    },
+                    dbuser: {
+                        type: "string"
+                    },
+                    dbpass: {
+                        type: "string"
+                    },
+                },
+                optional: {
+                    dbscheme: {
+                        type: "string"
+                    }
+                }
+            }
+        }
+        let conceptrepo = {
+            name: "Elkoss Combine",
+            id: "elkcom"
+        }
+
+        res.render('concept-details', {
+            name: cname,
+            concept: concept,
+            repo: conceptrepo
         })
     })
 

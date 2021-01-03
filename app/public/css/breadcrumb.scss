@@ -1,5 +1,3 @@
-@import "base.css";
-
 $breadcrumb-height: 2.25rem;
 
 .breadcrumb-container {
@@ -21,6 +19,35 @@ $breadcrumb-height: 2.25rem;
 
     .icon {
       margin-right: 0.2rem;
+    }
+
+  }
+}
+
+.breadcrumb {
+  width: 100%;
+
+  ul {
+    min-width: 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  li {
+    flex-shrink: 0;
+  }
+
+  li:last-child {
+    flex-shrink: 1;
+    min-width: 0;
+
+    a {
+      width: 100%;
+
+      .bread-text {
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
     }
 
   }
