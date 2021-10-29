@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -40,6 +41,11 @@ func (f File) String() string {
 
 func (r Render) PrintFiles() string {
 	var out []byte
+
+	sort.Slice(r.Files, func(i, j int) bool {
+		return r.Files[i].path < r.Files[j].path
+	})
+
 	for _, file := range r.Files {
 		out = append(out, file.content...)
 	}
