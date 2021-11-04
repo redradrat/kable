@@ -2,6 +2,7 @@ package concepts
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/grafana/tanka/pkg/kubernetes/manifest"
@@ -101,14 +102,29 @@ func renderJsonnetConcept(path string, avs *RenderValues, single bool) ([]File, 
 
 	var bundle []File
 	out := make(manifest.List, 0, len(extract))
+	type helper struct {
+		path    string
+		content manifest.Manifest
+	}
+	var helpers []helper
 	for _, m := range extract {
-		out = append(out, m)
 		bundle = append(bundle, File{
 			path:    fmt.Sprintf("%s_%s_%s.yaml", strings.ReplaceAll(m.APIVersion(), "/", "-"), m.Kind(), m.Metadata().Name()),
 			content: []byte(m.String()),
 		})
+		helpers = append(helpers, helper{
+			path:    fmt.Sprintf("%s_%s_%s.yaml", strings.ReplaceAll(m.APIVersion(), "/", "-"), m.Kind(), m.Metadata().Name()),
+			content: m,
+		})
 	}
 
+	sort.Slice(helpers, func(i, j int) bool {
+		return helpers[i].path < helpers[j].path
+	})
+
+	for _, h := range helpers {
+		out = append(out, h.content)
+	}
 	singlebundle := []File{{
 		path:    "manifest.yaml",
 		content: []byte(out.String()),
