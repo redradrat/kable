@@ -1,0 +1,17 @@
+/* Error: Undefined variable.
+ *   ,
+ * 9 |   box-shadow: 15px 1em 1em -0.125em rgba($scheme-invert, 0.05), 0 0px 0 0px rgba($scheme-invert, 0.02);
+ *   |                                          ^^^^^^^^^^^^^^
+ *   '
+ *   breadcrumb.scss 9:42  root stylesheet */
+
+body::before {
+  font-family: "Source Code Pro", "SF Mono", Monaco, Inconsolata, "Fira Mono",
+      "Droid Sans Mono", monospace, monospace;
+  white-space: pre;
+  display: block;
+  padding: 1em;
+  margin-bottom: 1em;
+  border-bottom: 2px solid black;
+  content: "Error: Undefined variable.\a   \2577 \a 9 \2502    box-shadow: 15px 1em 1em -0.125em rgba($scheme-invert, 0.05), 0 0px 0 0px rgba($scheme-invert, 0.02);\a   \2502                                           ^^^^^^^^^^^^^^\a   \2575 \a   breadcrumb.scss 9:42  root stylesheet";
+}

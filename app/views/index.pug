@@ -1,0 +1,38 @@
+extends layout.pug
+
+block title
+    title Kable - Dashboard
+
+block content
+    .tile.is-ancestor
+        .tile.is-parent
+            .tile.is-child.box
+                h1.title Hey, there!
+                p
+                    | Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam semper diam at erat pulvinar, at pulvinar felis blandit. Vestibulum volutpat tellus diam, consequat gravida libero rhoncus ut. Morbi maximus, leo sit amet vehicula eleifend, nunc dui porta orci, quis semper odio felis ut quam.
+                br
+                h2.title.is-4 Getting Started
+                p
+                    | Using the official documentation
+                    a(href="https://github.com/redradrat/kable#getting-started")  here
+                    |  you can find most resources available.
+        .tile.is-4.is-vertical.is-parent
+            .tile.is-child.box.has-background-primary
+                .box.has-background-primary-light
+                    p.title Version
+                    table.table.has-background-primary-light.is-fullwidth
+                        thead
+                            tr
+                                th Component
+                                th Version
+                        tbody
+                            tr
+                                td Kable Server
+                                td v0.7.0
+                            tr
+                                td Kable UI
+                                td v0.3.1
+            .tile.is-child.box.has-background-success
+                .box.has-background-success-light
+                    p.title.is-4 Kubernetes
+                    p.has-text-centered.title.is-1.is-family-monospace Active

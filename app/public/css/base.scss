@@ -1,0 +1,23 @@
+// Set your brand colors
+$purple: #8A4D76;
+$peach: #f4a3a4;
+$peach-lighter: #ffebeb;
+$brown: #757763;
+$beige-light: #D0D1CD;
+$beige-lighter: #EFF0EB;
+
+// Update Bulma's global variables
+$family-sans-serif: "Source Sans Pro", sans-serif;
+$grey-dark: $brown;
+$grey-light: $beige-light;
+$primary: $peach;
+$link: $peach;
+$widescreen-enabled: false;
+$fullhd-enabled: false;
+
+$menu-item-hover-color: $primary;
+
+$body-background-color: $beige-lighter;
+
+@import "bulma-0.9.1/bulma";
+@import "bulma-tooltip-1.2/src/sass/index";

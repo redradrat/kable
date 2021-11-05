@@ -1,0 +1,14 @@
+{
+  "name": "kable-ui",
+  "description": "The official kable UI.",
+  "author": "Ralph Kühnert <kuehnert.ralph@gmail.com>",
+  "license": "MIT",
+  "bin": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "pug": "^3.0.0"
+  }
+}

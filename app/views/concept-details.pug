@@ -1,0 +1,104 @@
+extends layout.pug
+
+block title
+    title Kable - #{name}
+
+block append breadcrumb
+    li
+        a(href="/concepts")
+            span.icon
+                i.fas.fa-lightbulb
+            span  Concepts
+    li
+        a
+            span.icon
+                i.fas.fa-asterisk
+            span.bread-text #{name}
+
+block content
+    .concept-details-header
+        .field.is-grouped
+            p.control
+                a(href="/concepts")
+                    button.button.is-link.is-small
+                        span.icon
+                            i.fas.fa-arrow-left
+                        span Back
+            p.control
+                button.button.is-info.is-small
+                    span.icon
+                        i.fas.fa-dharmachakra
+                    span Deploy
+    .box
+        h1.title #{concept.displayName}
+        h2.subtitle.is-size-6 #{name}
+        .concept-details
+            //.concept-details-title Details
+            .concept-details-meta
+                .concept-details-meta-entry
+                    strong Maintainer
+                    if concept.maintainer
+                        p
+                            span.mr-2 #{concept.maintainer.name}
+                            a(href="mailto:"+concept.maintainer.email data-tooltip=concept.maintainer.email).has-tooltip-right.is-italic.has-tooltip-primary
+                                i.fas.fa-envelope
+                    else
+                        p Unknown
+                .concept-details-meta-entry
+                    strong Version
+                    p #{concept.version}
+                .concept-details-meta-entry
+                    strong Type
+                    p #{concept.type}
+                .concept-details-meta-entry
+                    strong Repository
+                    a(href="/repos/"+repo.id)
+                        p #{repo.name}
+            .concept-details-description
+                .concept-details-title Description
+                .block
+                    | This concept blablablabla.
+            .concept-details-inputs
+                .concept-details-title Inputs
+                .container.table-container
+                    strong Mandatory
+                    table.table.is-fullwidth
+                        thead
+                            tr
+                                th Name
+                                th Type
+                                th Description
+                        tbody
+                            tr
+                                td dbname
+                                td string
+                                td Name of the database.
+                            tr
+                                td dbuser
+                                td string
+                                td Name of the primary database user.
+                            tr
+                                td dbpass
+                                td string
+                                td Password for the primary database user.
+                .container.table-container
+                    strong Optional
+                    table.table.is-fullwidth
+                        thead
+                            tr
+                                th Name
+                                th Type
+                                th Description
+                        tbody
+                            tr
+                                td dbname
+                                td string
+                                td Name of the database.
+                            tr
+                                td dbuser
+                                td string
+                                td Name of the primary database user.
+                            tr
+                                td dbpass
+                                td string
+                                td Password for the primary database user.

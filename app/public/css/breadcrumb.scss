@@ -1,0 +1,54 @@
+$breadcrumb-height: 2.25rem;
+
+.breadcrumb-container {
+  position: fixed;
+  width: 100%;
+  height: $breadcrumb-height;
+  box-shadow: 15px 1em 1em -0.125em rgba($scheme-invert, 0.05), 0 0px 0 0px rgba($scheme-invert, 0.02);
+  z-index: 29;
+}
+
+#breads {
+  @extend .card;
+  border-radius: 0;
+  padding: calc((#{$breadcrumb-height})/2 - 0.75rem) 1rem;
+  box-shadow: none;
+
+  a {
+    color: $primary;
+
+    .icon {
+      margin-right: 0.2rem;
+    }
+
+  }
+}
+
+.breadcrumb {
+  width: 100%;
+
+  ul {
+    min-width: 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  li {
+    flex-shrink: 0;
+  }
+
+  li:last-child {
+    flex-shrink: 1;
+    min-width: 0;
+
+    a {
+      width: 100%;
+
+      .bread-text {
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+    }
+
+  }
+}

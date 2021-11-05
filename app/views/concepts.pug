@@ -1,0 +1,68 @@
+extends layout.pug
+
+block title
+    title Kable - Concepts
+
+block append breadcrumb
+    li
+        a(href="concepts")
+            span.icon
+                i.fas.fa-lightbulb
+            span  Concepts
+
+block content
+    .box
+        nav.level.is-mobile
+            .level-item.has-text-centered
+                div
+                    p.heading Concepts
+                    p.title #{concepts.length}
+            .level-item.has-text-centered
+                div
+                    p.heading Stable
+                    p.title #{stableconcepts}
+            .level-item.has-text-centered
+                div
+                    p.heading Beta
+                    p.title #{betaconcepts}
+            .level-item.has-text-centered
+                div
+                    p.heading Alpha
+                    p.title #{alphaconcepts}
+    .container
+        .result-head.mb-4
+            .subtitle.mb-1 Concepts
+            //span.tag.is-success.is-light.mr-2
+            //    .icon
+            //        .fa.fa-lock
+            //    span Private
+            //span.tag.is-white.mr-2
+            //    .icon
+            //        .fa.fa-lock-open
+            //    span Public
+        .result-grid
+            each val, index in concepts
+                .card-entry
+                    .card-shields
+                        span.card-shield.is-info.is-light
+                            .icon
+                                .fa.fa-code-branch
+                            | #{val.version}
+                    .card-content
+                        .title.is-size-4 #{val.name}
+                        .content.is-size-7
+                            p
+                                | This is a demo description, that is not dynamic at all. Good thing about it is, that
+                                | one can easily measure spacing and typography this way.
+                            .tile.is-horizontal
+                                .tile.is-child
+                                    .block
+                                        strong Maintainer
+                                        p #{val.maintainer}
+                                .tile.is-child
+                                    .block
+                                        strong Type
+                                        p #{val.type}
+                    footer.card-footer
+                        a(href="concepts/" + val.id).card-footer-item
+                            | Details
