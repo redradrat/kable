@@ -29,9 +29,10 @@ const uiPortKey = "port"
 
 // uiCmd represents the serve command
 var uiCmd = &cobra.Command{
-	Use:   "ui",
-	Short: "Run kable UI",
-	Long:  `Runs kable UI as a server and connects to a kable server.`,
+	Use:    "ui",
+	Short:  "Run kable UI",
+	Hidden: true,
+	Long:   `Runs kable UI as a server and connects to a kable server.`,
 	Example: `kable ui --ui-address 127.0.0.1 --ui-port 2020
 	KABLE_UIADDRESS=127.0.0.1 KABLE_UIPORT kable ui`,
 	Run: func(cmd *cobra.Command, args []string) {
