@@ -1,4 +1,0 @@
-{
-    "go.autocompleteUnimportedPackages": true,
-    "go.lintTool": "golangci-lint"
-}
