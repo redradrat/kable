@@ -99,6 +99,7 @@ func ParseRenderInfoV1FromFile(path string) (*RenderInfoV1, error) {
 	}
 
 	ri := &RenderInfoV1{}
+	ri.Values = &RenderValues{}
 	if err := json.Unmarshal(f, &ri); err != nil {
 		return nil, err
 	}

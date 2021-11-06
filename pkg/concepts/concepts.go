@@ -149,8 +149,6 @@ func (c *Concept) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 	sort.Strings(inter.Meta.Tags)
-	sortMapKeys(inter.Inputs.Mandatory)
-	sortMapKeys(inter.Inputs.Optional)
 
 	c.ApiVersion = inter.ApiVersion
 	c.Meta = inter.Meta
@@ -158,18 +156,6 @@ func (c *Concept) UnmarshalJSON(bytes []byte) error {
 	c.Type = inter.Type
 
 	return nil
-}
-
-func sortMapKeys(m map[string]InputType) {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		fmt.Println(k, m[k])
-	}
 }
 
 type ConceptType string

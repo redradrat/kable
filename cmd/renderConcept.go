@@ -94,14 +94,18 @@ kable render -l . -o out/
 		if renderinfo != "" {
 			ri, err = concepts.ParseRenderInfoV1FromFile(renderinfo)
 		} else {
+			PrintMsg("Checking for existing renderinfo.json in output dir...")
 			ri, err = concepts.ParseRenderInfoV1FromFile(filepath.Join(outpath, concepts.ConceptRenderFileName))
 		}
 		if err != nil {
 			if os.IsNotExist(err) {
+				PrintMsg(fmt.Sprintf("No existing renderinfo.json detected."))
 				existingRenderInfo = false
 			} else {
 				PrintError("error parsing existing renderinfo: %s", err)
 			}
+		} else {
+			PrintMsg(fmt.Sprintf("Existing renderinfo.json detected at %s/renderinfo.json.", outpath))
 		}
 
 		// Ask for values if renderinfo does not exist

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/fatih/color"
 
@@ -24,27 +25,38 @@ func (id InputDialog) RunInputDialog() (*concepts.RenderValues, error) {
 	values := concepts.RenderValues{}
 	if len(id.inputs.Mandatory) != 0 {
 		PrintMsg("Mandatory Values")
-		for id, input := range id.inputs.Mandatory {
-			value, err := getValue(id, input)
+		keys := getSortedMapKeys(id.inputs.Mandatory)
+		for _, key := range keys {
+			value, err := getValue(key, id.inputs.Mandatory[key])
 			if err != nil {
 				return nil, err
 			}
-			values[id] = value
+			values[key] = value
 		}
 	}
 
 	if len(id.inputs.Optional) != 0 {
 		PrintMsg("Optional Values")
-		for id, input := range id.inputs.Optional {
-			value, err := getValue(id, input)
+		keys := getSortedMapKeys(id.inputs.Optional)
+		for _, key := range keys {
+			value, err := getValue(key, id.inputs.Optional[key])
 			if err != nil {
 				return nil, err
 			}
-			values[id] = value
+			values[key] = value
 		}
 	}
 
 	return &values, nil
+}
+
+func getSortedMapKeys(values map[string]concepts.InputType) []string {
+	var keys []string
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func getValue(name string, input concepts.InputType) (concepts.ValueType, error) {
