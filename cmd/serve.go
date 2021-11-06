@@ -40,6 +40,7 @@ var serveCmd = &cobra.Command{
 	Example: `kable serve --server-address 127.0.0.1 --server-port 2020
 	KABLE_SERVERADDRESS=127.0.0.1 KABLE_SERVERPORT kable serve`,
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		viper.Set(repositories.StoreKey, repositories.EtcdStoreConfigMap(strings.Split(viper.GetString(etcdEndpoints), ","), viper.GetDuration(etcdTimeout)).Map())
 		api.StartUp(fmt.Sprintf("%s:%s", viper.Get(serverAddressKey), viper.Get(serverPortKey)))
 	},

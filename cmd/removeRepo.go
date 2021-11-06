@@ -44,6 +44,7 @@ var removeCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		PrintMsg("Removing repository...")
 		mod, err := repositories.RemoveRepository(args[0])
 		if err != nil {

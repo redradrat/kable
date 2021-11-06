@@ -36,6 +36,7 @@ var uiCmd = &cobra.Command{
 	Example: `kable ui --ui-address 127.0.0.1 --ui-port 2020
 	KABLE_UIADDRESS=127.0.0.1 KABLE_UIPORT kable ui`,
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		err := ui.StartUp(fmt.Sprintf("%s:%s", viper.Get(uiAddressKey), viper.Get(uiPortKey)))
 		if err != nil {
 			PrintError("error occurred while running server: %v", err)

@@ -51,6 +51,7 @@ var addRepoCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		PrintMsg("Fetching repository...")
 		name := args[0]
 		repoUrl := args[1]

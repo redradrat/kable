@@ -31,6 +31,7 @@ var initConceptCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a concept in the current folder",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		wd, err := os.Getwd()
 		if err != nil {
 			PrintError("unable to initialize concept dir: %s", err)

@@ -65,6 +65,7 @@ kable render -l . -o out/
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		conceptIdentifier := concepts.ConceptIdentifier(args[0])
 
 		if printOnly {

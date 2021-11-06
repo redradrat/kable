@@ -43,6 +43,7 @@ kable helm concept --directory cert-manager cert-manager --repo jetstack --repoU
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		PrintMsg("Creating concept from helm chart '%s'...", args[0])
 		if err := helm.InitHelmConcept(helm.HelmChart{Name: args[0], Version: chartVersion, Repo: helm.HelmRepo{Name: chartRepoName, URL: chartRepoURL}}, dir); err != nil {
 			PrintError("unable to import helm chart: %s", err)

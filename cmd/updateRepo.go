@@ -25,6 +25,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update all the configured repositories",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		PrintMsg("Updating repositories...")
 		if err := repositories.UpdateRepositories(); err != nil {
 			PrintError("unable to update repositories: %s", err)

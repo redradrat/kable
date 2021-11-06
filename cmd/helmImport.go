@@ -42,6 +42,7 @@ kable helm import cert-manager --repo jetstack --repoURL https://charts.jetstack
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		if _, err := concepts.GetConcept("."); err != nil {
 			PrintError("current directory is not a concept directory: %s", err)
 		}

@@ -25,6 +25,7 @@ var listConceptsCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all available concepts",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		cis, err := concepts.ListConcepts()
 		if err != nil {
 			PrintError("unable to list concepts: %s", err)

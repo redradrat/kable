@@ -32,7 +32,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kable/userconfig.json)")
-	cobra.OnInitialize(initConfig)
+	//cobra.OnInitialize(initConfig)
 	bindFlags(rootCmd, viper.GetViper())
 }
 
@@ -62,7 +62,6 @@ func initConfig() {
 	viper.SetEnvPrefix("KABLE")
 
 	viper.AutomaticEnv()
-
 }
 
 // Bind each cobra flag to its associated viper configuration (config file and environment variable)

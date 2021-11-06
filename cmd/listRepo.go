@@ -25,6 +25,7 @@ var listReposCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all available concept repositories",
 	Run: func(cmd *cobra.Command, args []string) {
+		initConfig()
 		repos, err := repositories.ListRepositories()
 		if err != nil {
 			PrintError("cannot list repositories: %s \n", err)
