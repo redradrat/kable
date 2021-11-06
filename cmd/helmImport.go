@@ -29,9 +29,12 @@ var importSubdir string
 
 // helmImportCmd represents the import command
 var helmImportCmd = &cobra.Command{
-	Use:     "import",
-	Short:   "Import a helm chart from a helm repo into the concept",
-	Example: "kable helm import sentry --repoName stable --version 4.3.0",
+	Use:   "import",
+	Short: "Import a helm chart from a helm repo into the concept",
+	Example: `
+kable helm import sentry --repo stable --version 4.3.0
+kable helm import cert-manager --repo jetstack --repoURL https://charts.jetstack.io/ --version 1.6.1
+`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("requires exactly ONE argument")
