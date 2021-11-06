@@ -31,7 +31,7 @@ const jsonnetTpl = `local helm = (import "github.com/grafana/jsonnet-libs/helm-u
 }
 `
 
-const helmConceptLibTpl = `local helm = (import "github.com/grafana/jsonnet-libs/helm-util/helm.libsonnet").new(std.thisFile);
+const helmConceptLibTpl = `local helm = (import "github.com/grafana/jsonnet-libs/tanka-util/helm.libsonnet").new(std.thisFile);
 
 {
   _values:: {
