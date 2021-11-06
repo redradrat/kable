@@ -2,7 +2,6 @@ package tanka
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -46,7 +45,7 @@ func FormatFiles(fds []string, opts *FormatOpts) ([]string, error) {
 	outFn := opts.OutFn
 	if outFn == nil {
 		outFn = func(name, content string) error {
-			return ioutil.WriteFile(name, []byte(content), 0644)
+			return os.WriteFile(name, []byte(content), 0644)
 		}
 	}
 
@@ -58,7 +57,7 @@ func FormatFiles(fds []string, opts *FormatOpts) ([]string, error) {
 
 	var changed []string
 	for _, p := range paths {
-		content, err := ioutil.ReadFile(p)
+		content, err := os.ReadFile(p)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +103,10 @@ func findFiles(target string, excludes []glob.Glob) ([]string, error) {
 
 	// godirwalk is faster than filepath.Walk, 'cause no os.Stat required
 	err = godirwalk.Walk(target, &godirwalk.Options{
-		Callback: func(path string, de *godirwalk.Dirent) error {
+		Callback: func(rawPath string, de *godirwalk.Dirent) error {
+			// Normalize slashes for Windows
+			path := filepath.ToSlash(rawPath)
+
 			if de.IsDir() {
 				return nil
 			}

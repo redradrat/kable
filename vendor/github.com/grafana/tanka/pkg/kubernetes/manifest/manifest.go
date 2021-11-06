@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/objx"
 	yaml "gopkg.in/yaml.v2"
@@ -60,7 +62,7 @@ func (m Manifest) Verify() error {
 		if !o.Get("metadata").IsMSI() {
 			fields["metadata"] = ErrInvalidMap
 		}
-		if !o.Get("metadata.name").IsStr() {
+		if !o.Get("metadata.name").IsStr() && !o.Get("metadata.generateName").IsStr() {
 			fields["metadata.name"] = ErrInvalidStr
 		}
 
@@ -261,6 +263,20 @@ func (m List) String() string {
 	return buf.String()
 }
 
+func (m List) Namespaces() []string {
+	namespaces := map[string]struct{}{}
+	for _, manifest := range m {
+		if namespace := manifest.Metadata().Namespace(); namespace != "" {
+			namespaces[namespace] = struct{}{}
+		}
+	}
+	keys := []string{}
+	for k := range namespaces {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func m2o(m interface{}) objx.Map {
 	switch mm := m.(type) {
 	case Metadata:
@@ -269,4 +285,36 @@ func m2o(m interface{}) objx.Map {
 		return objx.New(map[string]interface{}(mm))
 	}
 	return nil
+}
+
+// DefaultNameFormat to use when no nameFormat is supplied
+const DefaultNameFormat = `{{ print .kind "_" .metadata.name | snakecase }}`
+
+func ListAsMap(list List, nameFormat string) (map[string]interface{}, error) {
+	if nameFormat == "" {
+		nameFormat = DefaultNameFormat
+	}
+
+	tmpl, err := template.New("").
+		Funcs(sprig.TxtFuncMap()).
+		Parse(nameFormat)
+	if err != nil {
+		return nil, fmt.Errorf("Parsing name format: %w", err)
+	}
+
+	out := make(map[string]interface{})
+	for _, m := range list {
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, m); err != nil {
+			return nil, err
+		}
+		name := buf.String()
+
+		if _, ok := out[name]; ok {
+			return nil, ErrorDuplicateName{name: name, format: nameFormat}
+		}
+		out[name] = map[string]interface{}(m)
+	}
+
+	return out, nil
 }

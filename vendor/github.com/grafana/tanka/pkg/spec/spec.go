@@ -2,13 +2,13 @@ package spec
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 
 	"github.com/pkg/errors"
 
+	"github.com/grafana/tanka/pkg/jsonnet/jpath"
 	"github.com/grafana/tanka/pkg/spec/v1alpha1"
 )
 
@@ -18,40 +18,56 @@ const APIGroup = "tanka.dev"
 // Specfile is the filename for the environment config
 const Specfile = "spec.json"
 
-// ParseDir parses the given environments `spec.json` into a `v1alpha1.Config`
+// ParseDir parses the given environments `spec.json` into a `v1alpha1.Environment`
 // object with the name set to the directories name
-func ParseDir(baseDir, name string) (*v1alpha1.Config, error) {
-	fi, err := os.Stat(baseDir)
+func ParseDir(path string) (*v1alpha1.Environment, error) {
+	root, base, err := jpath.Dirs(path)
 	if err != nil {
 		return nil, err
 	}
-	if !fi.IsDir() {
-		return nil, errors.New("baseDir is not an directory")
+
+	// name of the environment: relative path from rootDir
+	name, err := filepath.Rel(root, base)
+	if err != nil {
+		return nil, err
 	}
 
-	data, err := ioutil.ReadFile(filepath.Join(baseDir, Specfile))
+	file, err := jpath.Entrypoint(path)
+	if err != nil {
+		return nil, err
+	}
+
+	namespace, err := filepath.Rel(root, file)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(filepath.Join(base, Specfile))
 	if err != nil {
 		if os.IsNotExist(err) {
 			c := v1alpha1.New()
-			c.Metadata.Name = name
-			return c, ErrNoSpec{name}
+			c.Metadata.Name = name // legacy behavior
+			c.Metadata.Namespace = namespace
+			return c, ErrNoSpec{path}
 		}
 		return nil, err
 	}
 
-	return Parse(data, name)
+	c, err := Parse(data, namespace)
+	if c != nil {
+		// set the name field
+		c.Metadata.Name = name // legacy behavior
+	}
+
+	return c, err
 }
 
-// Parse parses the json `data` into a `v1alpha1.Config` object.
-// `name` is the name of the environment
-func Parse(data []byte, name string) (*v1alpha1.Config, error) {
+// Parse parses the json `data` into a `v1alpha1.Environment` object.
+func Parse(data []byte, namespace string) (*v1alpha1.Environment, error) {
 	config := v1alpha1.New()
 	if err := json.Unmarshal(data, config); err != nil {
 		return nil, errors.Wrap(err, "parsing spec.json")
 	}
-
-	// set the name field
-	config.Metadata.Name = name
 
 	if err := handleDeprecated(config, data); err != nil {
 		return config, err
@@ -62,10 +78,12 @@ func Parse(data []byte, name string) (*v1alpha1.Config, error) {
 		config.Spec.APIServer = "https://" + config.Spec.APIServer
 	}
 
+	config.Metadata.Namespace = namespace
+
 	return config, nil
 }
 
-func handleDeprecated(c *v1alpha1.Config, data []byte) error {
+func handleDeprecated(c *v1alpha1.Environment, data []byte) error {
 	var errDepr ErrDeprecated
 
 	var msi map[string]interface{}

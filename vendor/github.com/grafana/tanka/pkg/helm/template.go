@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/grafana/tanka/pkg/kubernetes/manifest"
 	"github.com/pkg/errors"
@@ -67,8 +66,12 @@ type TemplateOpts struct {
 	// IncludeCRDs specifies whether CustomResourceDefinitions are included in
 	// the template output
 	IncludeCRDs bool
+	// Kubernetes version used for Capabilities.KubeVersion
+	KubeVersion string
 	// Namespace scope for this request
 	Namespace string
+	// NoHooks specifies whether hooks should be excluded from the template output
+	NoHooks bool
 }
 
 // Flags returns all options apart from Values as their respective `helm
@@ -76,13 +79,20 @@ type TemplateOpts struct {
 func (t TemplateOpts) Flags() []string {
 	var flags []string
 
-	if t.APIVersions != nil {
-		value := strings.Join(t.APIVersions, ",")
+	for _, value := range t.APIVersions {
 		flags = append(flags, "--api-versions="+value)
 	}
 
 	if t.IncludeCRDs {
 		flags = append(flags, "--include-crds")
+	}
+
+	if t.KubeVersion != "" {
+		flags = append(flags, "--kube-version="+t.KubeVersion)
+	}
+
+	if t.NoHooks {
+		flags = append(flags, "--no-hooks")
 	}
 
 	if t.Namespace != "" {

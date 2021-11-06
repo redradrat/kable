@@ -2,6 +2,9 @@ package tanka
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/fatih/color"
 
 	"github.com/grafana/tanka/pkg/kubernetes"
 	"github.com/grafana/tanka/pkg/term"
@@ -21,11 +24,11 @@ type PruneOpts struct {
 // Jsonnet. It uses the `tanka.dev/environment` label to identify those.
 func Prune(baseDir string, opts PruneOpts) error {
 	// parse jsonnet, init k8s client
-	p, err := load(baseDir, opts.Opts)
+	p, err := Load(baseDir, opts.Opts)
 	if err != nil {
 		return err
 	}
-	kube, err := p.connect()
+	kube, err := p.Connect()
 	if err != nil {
 		return err
 	}
@@ -38,7 +41,7 @@ func Prune(baseDir string, opts PruneOpts) error {
 	}
 
 	if len(orphaned) == 0 {
-		fmt.Println("Nothing found to prune.")
+		log.Println("Nothing found to prune.")
 		return nil
 	}
 
@@ -50,6 +53,22 @@ func Prune(baseDir string, opts PruneOpts) error {
 		return err
 	}
 	fmt.Print(term.Colordiff(*diff).String())
+
+	// print namespace removal warning
+	namespaces := []string{}
+	for _, obj := range orphaned {
+		if obj.Kind() == "Namespace" {
+			namespaces = append(namespaces, obj.Metadata().Name())
+		}
+	}
+	if len(namespaces) > 0 {
+		warning := color.New(color.FgHiYellow, color.Bold).FprintfFunc()
+		warning(color.Error, "WARNING: This will delete following namespaces and all resources in them:\n")
+		for _, ns := range namespaces {
+			log.Printf(" - %s\n", ns)
+		}
+		log.Println("")
+	}
 
 	// prompt for confirm
 	if opts.AutoApprove {

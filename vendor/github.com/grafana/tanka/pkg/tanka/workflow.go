@@ -2,6 +2,7 @@ package tanka
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/fatih/color"
 
@@ -30,11 +31,11 @@ type ApplyOpts struct {
 // the evaluated jsonnet to the Kubernetes cluster defined in the environments
 // `spec.json`.
 func Apply(baseDir string, opts ApplyOpts) error {
-	l, err := load(baseDir, opts.Opts)
+	l, err := Load(baseDir, opts.Opts)
 	if err != nil {
 		return err
 	}
-	kube, err := l.connect()
+	kube, err := l.Connect()
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func Apply(baseDir string, opts ApplyOpts) error {
 	switch {
 	case err != nil:
 		// This is not fatal, the diff is not strictly required
-		fmt.Println("Error diffing:", err)
+		log.Println("Error diffing:", err)
 	case diff == nil:
 		tmp := "Warning: There are no differences. Your apply may not do anything at all."
 		diff = &tmp
@@ -88,10 +89,14 @@ func confirmPrompt(action, namespace string, info client.Info) error {
 type DiffOpts struct {
 	Opts
 
-	// Strategy must be one of "native" or "subset"
+	// Strategy must be one of "native", "validate", or "subset"
 	Strategy string
 	// Summarize prints a summary, instead of the actual diff
 	Summarize bool
+	// WithPrune includes objects to be deleted by prune command in the diff
+	WithPrune bool
+	// Exit with 0 even when differences are found
+	ExitZero bool
 }
 
 // Diff parses the environment at the given directory (a `baseDir`) and returns
@@ -101,11 +106,11 @@ type DiffOpts struct {
 // The cluster information is retrieved from the environments `spec.json`.
 // NOTE: This function requires on `diff(1)`, `kubectl(1)` and perhaps `diffstat(1)`
 func Diff(baseDir string, opts DiffOpts) (*string, error) {
-	l, err := load(baseDir, opts.Opts)
+	l, err := Load(baseDir, opts.Opts)
 	if err != nil {
 		return nil, err
 	}
-	kube, err := l.connect()
+	kube, err := l.Connect()
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +119,7 @@ func Diff(baseDir string, opts DiffOpts) (*string, error) {
 	return kube.Diff(l.Resources, kubernetes.DiffOpts{
 		Summarize: opts.Summarize,
 		Strategy:  opts.Strategy,
+		WithPrune: opts.WithPrune,
 	})
 }
 
@@ -134,11 +140,11 @@ type DeleteOpts struct {
 // the generated objects from the Kubernetes cluster defined in the environment's
 // `spec.json`.
 func Delete(baseDir string, opts DeleteOpts) error {
-	l, err := load(baseDir, opts.Opts)
+	l, err := Load(baseDir, opts.Opts)
 	if err != nil {
 		return err
 	}
-	kube, err := l.connect()
+	kube, err := l.Connect()
 	if err != nil {
 		return err
 	}
@@ -174,19 +180,10 @@ func Delete(baseDir string, opts DeleteOpts) error {
 // the list of Kubernetes objects.
 // Tip: use the `String()` function on the returned list to get the familiar yaml stream
 func Show(baseDir string, opts Opts) (manifest.List, error) {
-	l, err := load(baseDir, opts)
+	l, err := Load(baseDir, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	return l.Resources, nil
-}
-
-// Eval returns the raw evaluated Jsonnet output (without any transformations)
-func Eval(dir string, opts Opts) (raw interface{}, err error) {
-	r, _, err := eval(dir, opts.JsonnetOpts)
-	if err != nil {
-		return nil, err
-	}
-	return r, nil
 }

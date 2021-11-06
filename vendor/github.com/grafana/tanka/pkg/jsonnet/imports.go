@@ -1,9 +1,13 @@
 package jsonnet
 
 import (
-	"io/ioutil"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 
 	jsonnet "github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
@@ -26,9 +30,12 @@ func TransitiveImports(dir string) ([]string, error) {
 		return nil, err
 	}
 
-	mainFile := filepath.Join(dir, "main.jsonnet")
+	entrypoint, err := jpath.Entrypoint(dir)
+	if err != nil {
+		return nil, err
+	}
 
-	sonnet, err := ioutil.ReadFile(mainFile)
+	sonnet, err := os.ReadFile(entrypoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "opening file")
 	}
@@ -44,13 +51,13 @@ func TransitiveImports(dir string) ([]string, error) {
 		vm.NativeFunction(nf)
 	}
 
-	node, err := jsonnet.SnippetToAST("main.jsonnet", string(sonnet))
+	node, err := jsonnet.SnippetToAST(filepath.Base(entrypoint), string(sonnet))
 	if err != nil {
 		return nil, errors.Wrap(err, "creating Jsonnet AST")
 	}
 
 	imports := make(map[string]bool)
-	if err = importRecursive(imports, vm, node, "main.jsonnet"); err != nil {
+	if err = importRecursive(imports, vm, node, filepath.Base(entrypoint)); err != nil {
 		return nil, err
 	}
 
@@ -65,10 +72,13 @@ func TransitiveImports(dir string) ([]string, error) {
 		paths = append(paths, p)
 
 	}
-	paths = append(paths, mainFile)
+	paths = append(paths, entrypoint)
 
 	for i := range paths {
 		paths[i], _ = filepath.Rel(rootDir, paths[i])
+
+		// Normalize path separators for windows
+		paths[i] = filepath.ToSlash(paths[i])
 	}
 	sort.Strings(paths)
 
@@ -86,7 +96,7 @@ func importRecursive(list map[string]bool, vm *jsonnet.VM, node ast.Node, curren
 
 		contents, foundAt, err := vm.ImportAST(currentPath, p)
 		if err != nil {
-			return errors.Wrap(err, "importing jsonnet")
+			return fmt.Errorf("importing '%s' from '%s': %w", p, currentPath, err)
 		}
 
 		abs, _ := filepath.Abs(foundAt)
@@ -125,6 +135,44 @@ func importRecursive(list map[string]bool, vm *jsonnet.VM, node ast.Node, curren
 		}
 	}
 	return nil
+}
+
+var fileHashes sync.Map
+
+// getSnippetHash takes a jsonnet snippet and calculates a hash from its content
+//   and the content of all of its dependencies.
+// File hashes are cached in-memory to optimize multiple executions of this function in a process
+func getSnippetHash(vm *jsonnet.VM, path, data string) (string, error) {
+	node, _ := jsonnet.SnippetToAST(path, data)
+	result := map[string]bool{}
+	if err := importRecursive(result, vm, node, path); err != nil {
+		return "", err
+	}
+	fileNames := []string{}
+	for file := range result {
+		fileNames = append(fileNames, file)
+	}
+	sort.Strings(fileNames)
+
+	fullHasher := sha256.New()
+	fullHasher.Write([]byte(data))
+	for _, file := range fileNames {
+		var fileHash []byte
+		if got, ok := fileHashes.Load(file); ok {
+			fileHash = got.([]byte)
+		} else {
+			bytes, err := os.ReadFile(file)
+			if err != nil {
+				return "", err
+			}
+			hash := sha256.New()
+			fileHash = hash.Sum(bytes)
+			fileHashes.Store(file, fileHash)
+		}
+		fullHasher.Write(fileHash)
+	}
+
+	return base64.URLEncoding.EncodeToString(fullHasher.Sum(nil)), nil
 }
 
 func uniqueStringSlice(s []string) []string {

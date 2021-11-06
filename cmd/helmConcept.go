@@ -24,14 +24,15 @@ import (
 )
 
 var chartVersion string
-var chartRepo string
+var chartRepoName string
+var chartRepoURL string
 var dir string
 
 // helmImportCmd represents the import command
 var helmConceptCmd = &cobra.Command{
 	Use:     "concept",
 	Short:   "Create a concept, wrapping a helm chart from a git repo",
-	Example: "kable helm concept --directory sentry sentry --repo stable --version 4.3.0",
+	Example: "kable helm concept --directory sentry sentry --repoName stable --version 4.3.0",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("requires exactly ONE argument")
@@ -40,7 +41,7 @@ var helmConceptCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintMsg("Creating concept from helm chart '%s'...", args[0])
-		if err := helm.InitHelmConcept(helm.HelmChart{Name: args[0], Version: chartVersion, Repo: chartRepo}, dir); err != nil {
+		if err := helm.InitHelmConcept(helm.HelmChart{Name: args[0], Version: chartVersion, Repo: helm.HelmRepo{Name: chartRepoName, URL: chartRepoURL}}, dir); err != nil {
 			PrintError("unable to import helm chart: %s", err)
 		}
 	},
@@ -58,6 +59,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	helmConceptCmd.Flags().StringVarP(&chartVersion, "version", "v", "", "The version of the helm chart.")
-	helmConceptCmd.Flags().StringVarP(&chartRepo, "repo", "r", "stable", "The repo where the helm chart resides.")
+	helmConceptCmd.Flags().StringVar(&chartRepoName, "repoName", "stable", "The name of the repository where the helm chart resides. (stable: https://charts.helm.sh/stable)")
+	helmConceptCmd.Flags().StringVar(&chartRepoURL, "repoURL", "", "The URL of the repository where the helm chart resides.")
 	helmConceptCmd.Flags().StringVarP(&dir, "directory", "d", ".", "The directory to create the concept in.")
 }

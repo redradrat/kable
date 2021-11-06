@@ -3,7 +3,6 @@ package helm
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,7 +23,7 @@ func LoadChartfile(projectRoot string) (*Charts, error) {
 
 	// open chartfile
 	chartfile := filepath.Join(abs, Filename)
-	data, err := ioutil.ReadFile(chartfile)
+	data, err := os.ReadFile(chartfile)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +67,11 @@ type Charts struct {
 	Helm Helm
 }
 
+// chartManifest represents a Helm chart's Chart.yaml
+type chartManifest struct {
+	Version string `yaml:"version"`
+}
+
 // ChartDir returns the directory pulled charts are saved in
 func (c Charts) ChartDir() string {
 	return filepath.Join(c.projectRoot, c.Manifest.Directory)
@@ -86,14 +90,45 @@ func (c Charts) Vendor() error {
 		return err
 	}
 
-	log.Println("Syncing Repositories ...")
-	if err := c.Helm.RepoUpdate(Opts{Repositories: c.Manifest.Repositories}); err != nil {
-		return err
-	}
-
+	repositoriesUpdated := false
 	log.Println("Pulling Charts ...")
 	for _, r := range c.Manifest.Requires {
-		err := c.Helm.Pull(r.Chart, r.Version.String(), PullOpts{
+		chartName := parseReqName(r.Chart)
+		chartPath := filepath.Join(dir, chartName)
+
+		_, err := os.Stat(chartPath)
+		if err == nil {
+			chartManifestPath := filepath.Join(chartPath, "Chart.yaml")
+			chartManifestBytes, err := os.ReadFile(chartManifestPath)
+			if err != nil {
+				return fmt.Errorf("reading chart manifest: %w", err)
+			}
+			var chartYAML chartManifest
+			if err := yaml.Unmarshal(chartManifestBytes, &chartYAML); err != nil {
+				return fmt.Errorf("unmarshalling chart manifest: %w", err)
+			}
+
+			if chartYAML.Version == r.Version.String() {
+				log.Printf(" %s@%s exists", r.Chart, r.Version.String())
+				continue
+			} else {
+				log.Printf("Removing %s@%s", r.Chart, r.Version.String())
+				if err := os.RemoveAll(chartPath); err != nil {
+					return err
+				}
+			}
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+
+		if !repositoriesUpdated {
+			log.Println("Syncing Repositories ...")
+			if err := c.Helm.RepoUpdate(Opts{Repositories: c.Manifest.Repositories}); err != nil {
+				return err
+			}
+			repositoriesUpdated = true
+		}
+		err = c.Helm.Pull(r.Chart, r.Version.String(), PullOpts{
 			Destination: dir,
 			Opts:        Opts{Repositories: c.Manifest.Repositories},
 		})
@@ -101,7 +136,7 @@ func (c Charts) Vendor() error {
 			return err
 		}
 
-		log.Printf(" %s@%s", r.Chart, r.Version.String())
+		log.Printf(" %s@%s downloaded", r.Chart, r.Version.String())
 	}
 
 	return nil
@@ -109,12 +144,8 @@ func (c Charts) Vendor() error {
 
 // Add adds every Chart in reqs to the Manifest after validation, and runs
 // Vendor afterwards
-func (c Charts) Add(reqs []string) error {
+func (c *Charts) Add(reqs []string) error {
 	log.Printf("Adding %v Charts ...", len(reqs))
-
-	skip := func(s string, err error) {
-		log.Printf(" Skipping %s: %s.", s, err)
-	}
 
 	// parse new charts, append in memory
 	added := 0
@@ -150,12 +181,37 @@ func (c Charts) Add(reqs []string) error {
 	return c.Vendor()
 }
 
+func (c *Charts) AddRepos(repos ...Repo) error {
+	added := 0
+	for _, r := range repos {
+		if c.Manifest.Repositories.Has(r) {
+			skip(r.Name, fmt.Errorf("already exists"))
+			continue
+		}
+
+		c.Manifest.Repositories = append(c.Manifest.Repositories, r)
+		added++
+		log.Println(" OK:", r.Name)
+	}
+
+	// write out
+	if err := write(c.Manifest, c.ManifestFile()); err != nil {
+		return err
+	}
+
+	if added != len(repos) {
+		return fmt.Errorf("%v Repo(s) were skipped. Please check above logs for details", len(repos)-added)
+	}
+
+	return nil
+}
+
 func InitChartfile(path string) (*Charts, error) {
 	c := Chartfile{
 		Version: Version,
 		Repositories: []Repo{{
 			Name: "stable",
-			URL:  "https://kubernetes-charts.storage.googleapis.com",
+			URL:  "https://charts.helm.sh/stable",
 		}},
 		Requires: make(Requirements, 0),
 	}
@@ -174,7 +230,7 @@ func write(c Chartfile, dest string) error {
 		return err
 	}
 
-	return ioutil.WriteFile(dest, data, 0644)
+	return os.WriteFile(dest, data, 0644)
 }
 
 var chartExp = regexp.MustCompile(`\w+\/.+@.+`)
@@ -198,4 +254,15 @@ func parseReq(s string) (*Requirement, error) {
 		Chart:   chart,
 		Version: *ver,
 	}, nil
+}
+
+// parseReqName parses a name from a string of the format `repo/name`
+func parseReqName(s string) string {
+	elems := strings.Split(s, "/")
+	name := elems[1]
+	return name
+}
+
+func skip(s string, err error) {
+	log.Printf(" Skipping %s: %s.", s, err)
 }

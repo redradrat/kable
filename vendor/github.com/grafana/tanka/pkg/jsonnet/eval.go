@@ -1,7 +1,8 @@
 package jsonnet
 
 import (
-	"path/filepath"
+	"os"
+	"regexp"
 
 	jsonnet "github.com/google/go-jsonnet"
 	"github.com/pkg/errors"
@@ -28,10 +29,48 @@ func (i *InjectedCode) Set(key, value string) {
 
 // Opts are additional properties for the Jsonnet VM
 type Opts struct {
+	MaxStack    int
 	ExtCode     InjectedCode
 	TLACode     InjectedCode
 	ImportPaths []string
-	EvalPattern string
+	EvalScript  string
+	CachePath   string
+
+	CachePathRegexes []*regexp.Regexp
+}
+
+// PathIsCached determines if a given path is matched by any of the configured cached path regexes
+// If no path regexes are defined, all paths are matched
+func (opts Opts) PathIsCached(path string) bool {
+	for _, regex := range opts.CachePathRegexes {
+		if regex.MatchString(path) {
+			return true
+		}
+	}
+	return len(opts.CachePathRegexes) == 0
+}
+
+// Clone returns a deep copy of Opts
+func (o Opts) Clone() Opts {
+	extCode, tlaCode := InjectedCode{}, InjectedCode{}
+
+	for k, v := range o.ExtCode {
+		extCode[k] = v
+	}
+
+	for k, v := range o.TLACode {
+		tlaCode[k] = v
+	}
+
+	return Opts{
+		TLACode:     tlaCode,
+		ExtCode:     extCode,
+		ImportPaths: append([]string{}, o.ImportPaths...),
+		EvalScript:  o.EvalScript,
+
+		CachePath:        o.CachePath,
+		CachePathRegexes: o.CachePathRegexes,
+	}
 }
 
 // MakeVM returns a Jsonnet VM with some extensions of Tanka, including:
@@ -53,6 +92,10 @@ func MakeVM(opts Opts) *jsonnet.VM {
 		vm.NativeFunction(nf)
 	}
 
+	if opts.MaxStack > 0 {
+		vm.MaxStack = opts.MaxStack
+	}
+
 	return vm
 }
 
@@ -60,23 +103,62 @@ func MakeVM(opts Opts) *jsonnet.VM {
 // result in JSON form. It disregards opts.ImportPaths in favor of automatically
 // resolving these according to the specified file.
 func EvaluateFile(jsonnetFile string, opts Opts) (string, error) {
-	jpath, _, _, err := jpath.Resolve(filepath.Dir(jsonnetFile))
-	if err != nil {
-		return "", errors.Wrap(err, "resolving import paths")
+	evalFunc := func(vm *jsonnet.VM) (string, error) {
+		return vm.EvaluateFile(jsonnetFile)
 	}
-	opts.ImportPaths = jpath
-
-	vm := MakeVM(opts)
-	return vm.EvaluateFile(jsonnetFile)
+	data, err := os.ReadFile(jsonnetFile)
+	if err != nil {
+		return "", err
+	}
+	return evaluateSnippet(evalFunc, jsonnetFile, string(data), opts)
 }
 
 // Evaluate renders the given jsonnet into a string
-func Evaluate(filename, data string, opts Opts) (string, error) {
-	jpath, _, _, err := jpath.Resolve(filepath.Dir(filename))
+// If cache options are given, a hash from the data will be computed and
+//  the resulting string will be cached for future retrieval
+func Evaluate(path, data string, opts Opts) (string, error) {
+	evalFunc := func(vm *jsonnet.VM) (string, error) {
+		return vm.EvaluateAnonymousSnippet(path, data)
+	}
+	return evaluateSnippet(evalFunc, path, data, opts)
+}
+
+type evalFunc func(vm *jsonnet.VM) (string, error)
+
+func evaluateSnippet(evalFunc evalFunc, path, data string, opts Opts) (string, error) {
+	var cache *FileEvalCache
+	if opts.CachePath != "" && opts.PathIsCached(path) {
+		cache = NewFileEvalCache(opts.CachePath)
+	}
+
+	// Create VM
+	jpath, _, _, err := jpath.Resolve(path)
 	if err != nil {
 		return "", errors.Wrap(err, "resolving import paths")
 	}
 	opts.ImportPaths = jpath
 	vm := MakeVM(opts)
-	return vm.EvaluateAnonymousSnippet(filename, data)
+
+	var hash string
+	if cache != nil {
+		if hash, err = getSnippetHash(vm, path, data); err != nil {
+			return "", err
+		}
+		if v, err := cache.Get(hash); err != nil {
+			return "", err
+		} else if v != "" {
+			return v, nil
+		}
+	}
+
+	content, err := evalFunc(vm)
+	if err != nil {
+		return "", err
+	}
+
+	if cache != nil {
+		return content, cache.Store(hash, content)
+	}
+
+	return content, nil
 }

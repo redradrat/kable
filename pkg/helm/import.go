@@ -52,14 +52,16 @@ local values = {
 lib + { _values+: values }
 `
 
+type HelmRepo helm.Repo
+
 type HelmChart struct {
-	Repo    string
+	Repo    HelmRepo
 	Name    string
 	Version string
 }
 
 func (hc HelmChart) Requirement() string {
-	return fmt.Sprintf("%s/%s@%s", hc.Repo, hc.Name, hc.Version)
+	return fmt.Sprintf("%s/%s@%s", hc.Repo.Name, hc.Name, hc.Version)
 }
 
 func InitHelmConcept(chart HelmChart, out string) error {
@@ -120,6 +122,16 @@ func ImportHelmChart(helmChart HelmChart, out string) error {
 			}
 		}
 		return err
+	}
+
+	// If repo name is not stable, we add the repo to the chartfile.
+	if helmChart.Repo.Name != "stable" {
+		if err := cf.AddRepos(helm.Repo{
+			Name: helmChart.Repo.Name,
+			URL:  helmChart.Repo.URL,
+		}); err != nil {
+			return err
+		}
 	}
 
 	if err := cf.Add([]string{helmChart.Requirement()}); err != nil {

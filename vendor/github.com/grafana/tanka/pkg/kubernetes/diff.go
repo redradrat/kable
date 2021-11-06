@@ -23,7 +23,18 @@ Please upgrade kubectl to at least version 1.18.1.`)
 	// required for separating
 	namespaces, err := k.ctl.Namespaces()
 	if err != nil {
-		return nil, errors.Wrap(err, "listing namespaces")
+		resourceNamespaces := state.Namespaces()
+		namespaces = map[string]bool{}
+		for _, namespace := range resourceNamespaces {
+			_, err = k.ctl.Namespace(namespace)
+			if err != nil {
+				if errors.As(err, client.ErrNamespaceNotFound{}) {
+					continue
+				}
+				return nil, errors.Wrap(err, "retrieving namespaces")
+			}
+			namespaces[namespace] = true
+		}
 	}
 	resources, err := k.ctl.Resources()
 	if err != nil {
@@ -48,13 +59,27 @@ Please upgrade kubectl to at least version 1.18.1.`)
 		return nil, err
 	}
 
-	// reports all resources as new
-	staticDiff := StaticDiffer(true)
+	// reports all resources as created
+	staticDiffAllCreated := StaticDiffer(true)
+
+	// reports all resources as deleted
+	staticDiffAllDeleted := StaticDiffer(false)
+
+	// include orphaned resources in the diff if it was requested by the user
+	orphaned := manifest.List{}
+	if opts.WithPrune {
+		// find orphaned resources
+		orphaned, err = k.Orphaned(state)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// run the diff
 	d, err := multiDiff{
 		{differ: liveDiff, state: live},
-		{differ: staticDiff, state: soon},
+		{differ: staticDiffAllCreated, state: soon},
+		{differ: staticDiffAllDeleted, state: orphaned},
 	}.diff()
 
 	switch {

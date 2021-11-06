@@ -1,53 +1,27 @@
 package jpath
 
 import (
-	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
-var (
-	// ErrorNoRoot means no rootDir was found in the parents
-	ErrorNoRoot = errors.New("could not locate a tkrc.yaml or jsonnetfile.json in the parent directories, which is required to identify the project root.\nRefer to https://tanka.dev/directory-structure for more information")
+const DEFAULT_ENTRYPOINT = "main.jsonnet"
 
-	// ErrorNoBase means no baseDir was found in the parents
-	ErrorNoBase = errors.New("could not locate a main.jsonnet in the parent directories, which is required as the entrypoint for the evaluation.\nRefer to https://tanka.dev/directory-structure for more information")
-)
-
-// ErrorFileNotFound means that the searched file was not found
-type ErrorFileNotFound struct {
-	filename string
-}
-
-func (e ErrorFileNotFound) Error() string {
-	return e.filename + " not found"
-}
-
-// Resolve the given directory and resolves the jPath around it. This means it:
+// Resolve the given path and resolves the jPath around it. This means it:
 // - figures out the project root (the one with .jsonnetfile, vendor/ and lib/)
-// - figures out the environments base directory (the one with the main.jsonnet)
+// - figures out the environments base directory (usually the main.jsonnet)
 //
 // It then constructs a jPath with the base directory, vendor/ and lib/.
 // This results in predictable imports, as it doesn't matter whether the user called
 // called the command further down tree or not. A little bit like git.
-func Resolve(workdir string) (path []string, base, root string, err error) {
-	workdir, err = filepath.Abs(workdir)
+func Resolve(path string) (jpath []string, base, root string, err error) {
+	root, err = FindRoot(path)
 	if err != nil {
 		return nil, "", "", err
 	}
 
-	root, err = findRoot(workdir)
+	base, err = FindBase(path, root)
 	if err != nil {
-		return nil, "", "", err
-	}
-
-	base, err = FindParentFile("main.jsonnet", workdir, root)
-	if err != nil {
-		if _, ok := err.(ErrorFileNotFound); ok {
-			return nil, "", "", ErrorNoBase
-		}
 		return nil, "", "", err
 	}
 
@@ -60,56 +34,40 @@ func Resolve(workdir string) (path []string, base, root string, err error) {
 	}, base, root, nil
 }
 
-// findRoot searches for a rootDir by the following criteria:
-// - tkrc.yaml is considered first, for a jb-independent way of marking the root
-// - if it is not present (default), jsonnetfile.json is used.
-func findRoot(start string) (dir string, err error) {
-	// root path based on os
-	stop := "/"
-	if runtime.GOOS == "windows" {
-		stop = filepath.VolumeName(start) + "\\"
-	}
-
-	// try tkrc.yaml first
-	root, err := FindParentFile("tkrc.yaml", start, stop)
-	if err == nil {
-		return root, nil
-	}
-
-	// otherwise use jsonnetfile.json
-	root, err = FindParentFile("jsonnetfile.json", start, stop)
-	if err != nil {
-		if _, ok := err.(ErrorFileNotFound); ok {
-			return "", ErrorNoRoot
-		}
-		return "", err
-	}
-
-	return root, nil
-}
-
-// FindParentFile traverses the parent directory tree for the given `file`,
-// starting from `start` and ending in `stop`. If the file is not found an error is returned.
-func FindParentFile(file, start, stop string) (string, error) {
-	files, err := ioutil.ReadDir(start)
+// Filename returns the name of the entrypoint file.
+// It DOES NOT return an absolute path, only a plain name like "main.jsonnet"
+// To obtain an absolute path, use Entrypoint() instead.
+func Filename(path string) (string, error) {
+	fi, err := os.Stat(path)
 	if err != nil {
 		return "", err
 	}
 
-	if dirContainsFile(files, file) {
-		return start, nil
-	} else if start == stop {
-		return "", ErrorFileNotFound{file}
+	if fi.IsDir() {
+		return DEFAULT_ENTRYPOINT, nil
 	}
-	return FindParentFile(file, filepath.Dir(start), stop)
+
+	return filepath.Base(fi.Name()), nil
+
 }
 
-// dirContainsFile returns whether a file is included in a directory.
-func dirContainsFile(files []os.FileInfo, filename string) bool {
-	for _, f := range files {
-		if f.Name() == filename {
-			return true
-		}
+// Entrypoint returns the absolute path of the environments entrypoint file (the
+// one passed to jsonnet.EvaluateFile)
+func Entrypoint(path string) (string, error) {
+	root, err := FindRoot(path)
+	if err != nil {
+		return "", err
 	}
-	return false
+
+	base, err := FindBase(path, root)
+	if err != nil {
+		return "", err
+	}
+
+	filename, err := Filename(path)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(base, filename), nil
 }
