@@ -10,8 +10,8 @@ test: fmt vet
 fmt:
 	go fmt ./...
 
-install: build
-	cp bin/kable ~/tempapps/kable
+install:
+	go install -ldflags="-X github.com/redradrat/kable/cmd.CliVersion=$(CLI_VERSION) -X github.com/redradrat/kable/cmd.CliDate=$(CLI_DATE)"
 
 # Run go vet against code
 vet:
