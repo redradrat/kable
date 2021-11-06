@@ -59,7 +59,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	helmConceptCmd.Flags().StringVarP(&chartVersion, "version", "v", "", "The version of the helm chart.")
-	helmConceptCmd.Flags().StringVar(&chartRepoName, "repoName", "stable", "The name of the repository where the helm chart resides. (stable: https://charts.helm.sh/stable)")
+	helmConceptCmd.Flags().StringVar(&chartRepoName, "repo", "stable", "The name of the repository where the helm chart resides. (stable: https://charts.helm.sh/stable)")
 	helmConceptCmd.Flags().StringVar(&chartRepoURL, "repoURL", "", "The URL of the repository where the helm chart resides.")
 	helmConceptCmd.Flags().StringVarP(&dir, "directory", "d", ".", "The directory to create the concept in.")
 }
