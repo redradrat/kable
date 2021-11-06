@@ -37,7 +37,7 @@ const helmConceptLibTpl = `local helm = (import "github.com/grafana/jsonnet-libs
   _values:: {
     foo: error "missing value foo"
   },
-  {{.Name}}: helm.template("{{.Name}}", "../charts/{{.Name}}", {
+  "{{.Name}}": helm.template("{{.Name}}", "../charts/{{.Name}}", {
     namespace: "default",
     values: $._values
   })
