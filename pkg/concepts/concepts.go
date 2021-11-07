@@ -309,14 +309,24 @@ func InitConcept(workdir, name string, conceptType ConceptType) error {
 		Inputs: ConceptInputs{
 			Mandatory: map[string]InputType{
 				"instanceName": {
-					Type: ConceptStringInputType,
+					Type:        ConceptStringInputType,
+					Description: "The desired name of the instance",
+					Example:     "customerX",
 				},
-				"nameSelection": {
-					Type:    ConceptSelectionInputType,
-					Options: []string{"Option 1", "Option 2"},
+				"colorSelection": {
+					Type:        ConceptSelectionInputType,
+					Options:     []string{"Blue", "Red"},
+					Description: "The desired color for the instance",
+					Example:     "Red",
 				},
 			},
-			Optional: nil,
+			Optional: map[string]InputType{
+				"welcomeMessage": {
+					Type:        ConceptStringInputType,
+					Description: "The custom welcome message to display",
+					Example:     "Hello World!",
+				},
+			},
 		},
 	}
 
