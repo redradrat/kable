@@ -75,7 +75,7 @@ Mandatory Values
 ? instanceName (string) [? for help] 
 ``` 
 
-As this is our first time rendering this, a dialog will pop up, asking us for values.
+As this is our first time rendering this, a dialog will open up, asking us for values.
 So for now we will comply with what this pesky dialog wants.
 
 ```
@@ -132,7 +132,7 @@ will be reused, if this file is detected. You can even pass a specific file with
 ───────┴────────────────────────────────────────────────────────────────────
 ```
 
-When we now execute our render command again, we will see that kable automatically
+When we now run our render command again, we will see that kable automatically
 detects the `renderinfo.json` file in the output path, and reuses it's values.
 
 ```
@@ -232,7 +232,7 @@ When rendering via `kable render` a dialog will ask the user about the defined i
 
 Examples of how to define aforementioned inputs in your concept.json file:
 
-```
+```json
 {
     "apiVersion": 1,
     "type": "jsonnet",
@@ -243,19 +243,19 @@ Examples of how to define aforementioned inputs in your concept.json file:
             // HERE WE CAN DEFINE INPUTS
 
             "string": {
-                "type": "string",
+                "type": "string"
             },
 
             "int": {
-                "type": "int",
+                "type": "int"
             },
 
             "bool": {
-                "type": "bool",
+                "type": "bool"
             },
 
             "map": {
-                "type": "map",
+                "type": "map"
             },
 
             "selection": {
@@ -264,11 +264,43 @@ Examples of how to define aforementioned inputs in your concept.json file:
                     "Option 1",
                     "Option 2"
                 ]
-            },
+            }
 
         },
-        "optional": {...},
+        "optional": {
+          
+          // ANOTHER SECTION OF INPUTS THAT ARE NOT MANDATORY
+          
+          "string": {
+            "type": "string"
+          },
+          ...
+        }
     }
+}
+```
+
+There is the possibility to add a description and example to each required input.
+
+```json
+{
+  "apiVersion": 1,
+  "type": "jsonnet",
+  "metadata": {
+    ...
+  },
+  "inputs": {
+    "mandatory": {
+      // HERE WE CAN DEFINE INPUTS
+
+      "string": {
+        "type": "string",
+        "description": "This text describes the purpose of the input.",
+        "example": "examplevalue"
+      },
+      ...
+    }
+  }
 }
 ```
 

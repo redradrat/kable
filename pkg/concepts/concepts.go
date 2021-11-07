@@ -195,8 +195,10 @@ func (ci ConceptInputs) All() map[string]InputType {
 }
 
 type InputType struct {
-	Type    InputTypeIdentifier `json:"type"`
-	Options []string            `json:"options,omitempty"`
+	Type        InputTypeIdentifier `json:"type"`
+	Description string              `json:"description"`
+	Example     string              `json:"example"`
+	Options     []string            `json:"options,omitempty"`
 }
 
 type InputTypeIdentifier string
