@@ -17,14 +17,10 @@ github.com/Masterminds/semver/v3
 github.com/Masterminds/sprig/v3
 # github.com/andybalholm/brotli v1.0.0
 github.com/andybalholm/brotli
-# github.com/coreos/etcd v3.3.13+incompatible
-## explicit
-github.com/coreos/etcd/auth/authpb
-github.com/coreos/etcd/clientv3
-github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes
-github.com/coreos/etcd/etcdserver/etcdserverpb
-github.com/coreos/etcd/mvcc/mvccpb
-github.com/coreos/etcd/pkg/types
+# github.com/coreos/go-semver v0.3.0
+github.com/coreos/go-semver/semver
+# github.com/coreos/go-systemd/v22 v22.3.2
+github.com/coreos/go-systemd/v22/journal
 # github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 ## explicit
 github.com/coreos/pkg/httputil
@@ -177,10 +173,6 @@ github.com/grafana/tanka/pkg/spec
 github.com/grafana/tanka/pkg/spec/v1alpha1
 github.com/grafana/tanka/pkg/tanka
 github.com/grafana/tanka/pkg/term
-# github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
-## explicit
-# github.com/grpc-ecosystem/grpc-gateway v1.9.5
-## explicit
 # github.com/hashicorp/hcl v1.0.0
 github.com/hashicorp/hcl
 github.com/hashicorp/hcl/hcl/ast
@@ -255,12 +247,6 @@ github.com/pelletier/go-toml
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.0.0
-## explicit
-# github.com/prometheus/client_model v0.2.0
-## explicit
-# github.com/prometheus/procfs v0.0.11
-## explicit
 # github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/shopspring/decimal v1.2.0
@@ -303,8 +289,35 @@ github.com/valyala/fasttemplate
 github.com/valyala/tcplisten
 # github.com/xanzy/ssh-agent v0.2.1
 github.com/xanzy/ssh-agent
-# go.etcd.io/bbolt v1.3.3
+# go.etcd.io/etcd/api/v3 v3.5.1
+go.etcd.io/etcd/api/v3/authpb
+go.etcd.io/etcd/api/v3/etcdserverpb
+go.etcd.io/etcd/api/v3/membershippb
+go.etcd.io/etcd/api/v3/mvccpb
+go.etcd.io/etcd/api/v3/v3rpc/rpctypes
+go.etcd.io/etcd/api/v3/version
+# go.etcd.io/etcd/client/pkg/v3 v3.5.1
+go.etcd.io/etcd/client/pkg/v3/logutil
+go.etcd.io/etcd/client/pkg/v3/systemd
+go.etcd.io/etcd/client/pkg/v3/types
+# go.etcd.io/etcd/client/v3 v3.5.1
 ## explicit
+go.etcd.io/etcd/client/v3
+go.etcd.io/etcd/client/v3/credentials
+go.etcd.io/etcd/client/v3/internal/endpoint
+go.etcd.io/etcd/client/v3/internal/resolver
+# go.uber.org/atomic v1.7.0
+go.uber.org/atomic
+# go.uber.org/multierr v1.6.0
+go.uber.org/multierr
+# go.uber.org/zap v1.17.0
+go.uber.org/zap
+go.uber.org/zap/buffer
+go.uber.org/zap/internal/bufferpool
+go.uber.org/zap/internal/color
+go.uber.org/zap/internal/exit
+go.uber.org/zap/zapcore
+go.uber.org/zap/zapgrpc
 # golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
@@ -360,42 +373,51 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
-# google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
+# google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
+google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.27.0
+# google.golang.org/grpc v1.38.0
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
+google.golang.org/grpc/balancer/grpclb/state
 google.golang.org/grpc/balancer/roundrobin
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
 google.golang.org/grpc/credentials
-google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
-google.golang.org/grpc/health/grpc_health_v1
 google.golang.org/grpc/internal
 google.golang.org/grpc/internal/backoff
 google.golang.org/grpc/internal/balancerload
 google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
+google.golang.org/grpc/internal/credentials
 google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/grpcutil
+google.golang.org/grpc/internal/metadata
+google.golang.org/grpc/internal/resolver
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
+google.golang.org/grpc/internal/resolver/unix
+google.golang.org/grpc/internal/serviceconfig
+google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
+google.golang.org/grpc/internal/transport/networktype
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
-google.golang.org/grpc/naming
 google.golang.org/grpc/peer
 google.golang.org/grpc/resolver
+google.golang.org/grpc/resolver/manual
 google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status

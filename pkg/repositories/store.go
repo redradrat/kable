@@ -8,12 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/fatih/structs"
 	"github.com/google/logger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/redradrat/kable/pkg/errors"
 	"github.com/spf13/viper"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (
