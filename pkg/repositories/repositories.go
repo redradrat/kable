@@ -113,12 +113,13 @@ func RemoveRepository(name string) (RegistryModification, error) {
 }
 
 func UpdateRegistry(updates ...RegistryModification) error {
-	registry, err := unpointerify(Registry())
+	var registry RepoRegistry
+	ptrRegistry, err := Registry()
 	if err != nil {
 		return err
 	}
 	for _, update := range updates {
-		registry = update(registry)
+		registry = update(*ptrRegistry)
 	}
 
 	store, err := GetStoreFromConfig()
@@ -336,9 +337,4 @@ func RepoAuthExists(url string) (bool, error) {
 
 func trimUrl(url string) string {
 	return strings.TrimSuffix(url, ".git")
-}
-
-func unpointerify(i *RepoRegistry, e error) (RepoRegistry, error) {
-	x := i
-	return *x, e
 }

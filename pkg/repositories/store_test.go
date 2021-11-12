@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -599,42 +598,6 @@ func Test_trimUrl(t *testing.T) {
 		})
 	}
 }
-
-func Test_unpointerify(t *testing.T) {
-	type args struct {
-		i *RepoRegistry
-		e error
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    RepoRegistry
-		wantErr bool
-	}{
-		{name: "noerror", args: struct {
-			i *RepoRegistry
-			e error
-		}{i: &DemoRegistry, e: nil}, want: DemoRegistry, wantErr: false},
-		{name: "error", args: struct {
-			i *RepoRegistry
-			e error
-		}{i: &DemoRegistry, e: testPtrError}, want: DemoRegistry, wantErr: true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := unpointerify(tt.args.i, tt.args.e)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("unpointerify() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("unpointerify() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-var testPtrError = errors.New("test")
 
 func TestEtcdStore_readRegistry(t *testing.T) {
 
