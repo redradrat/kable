@@ -340,5 +340,8 @@ func trimUrl(url string) string {
 
 func unpointerify(i *RepoRegistry, e error) (RepoRegistry, error) {
 	x := i
-	return *x, e
+	if x != nil {
+		return *x, e
+	}
+	return RepoRegistry{}, e
 }
