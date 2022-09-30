@@ -15,8 +15,8 @@ require (
 	github.com/grafana/tanka v0.18.2
 	github.com/jsonnet-bundler/jsonnet-bundler v0.4.0
 	github.com/kr/pty v1.1.5 // indirect
-	github.com/labstack/echo/v4 v4.1.16
-	github.com/labstack/gommon v0.3.0
+	github.com/labstack/echo/v4 v4.9.0
+	github.com/labstack/gommon v0.3.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/olekukonko/tablewriter v0.0.4
